@@ -298,6 +298,20 @@ const _nav = [
         component: CNavItem,
         name: (
           <React.Fragment>
+            {'OTP Input'}
+            <CIcon icon={cilExternalLink} size="sm" className="ms-2" />
+          </React.Fragment>
+        ),
+        href: 'https://coreui.io/react/docs/forms/one-time-password-input/',
+        badge: {
+          color: 'danger',
+          text: 'PRO',
+        },
+      },
+      {
+        component: CNavItem,
+        name: (
+          <React.Fragment>
             {'Password Input'}
             <CIcon icon={cilExternalLink} size="sm" className="ms-2" />
           </React.Fragment>

@@ -179,6 +179,7 @@ CoreUI React.js Admin Templates are built on top of CoreUI and CoreUI PRO UI com
 - [React Navs & Tabs](https://coreui.io/react/docs/components/navs-tabs/)
 - [React Navbar](https://coreui.io/react/docs/components/navbar/)
 - [React Offcanvas](https://coreui.io/react/docs/components/offcanvas/)
+- [React One Time Password Input](https://coreui.io/react/docs/forms/one-time-password-input/) **PRO**
 - [React Pagination](https://coreui.io/react/docs/components/pagination/)
 - [React Password Input](https://coreui.io/react/docs/forms/password-input/) **PRO**
 - [React Placeholder](https://coreui.io/react/docs/components/placeholder/)
