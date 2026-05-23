@@ -199,7 +199,7 @@ export function DashboardView() {
             {upcomingEvents.length === 0 ? <p className="text-sm text-muted-foreground">No upcoming events</p> : <div className="space-y-3">
                 {upcomingEvents.map((event) => <div
     key={event.id}
-    className="flex items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-4 transition-colors hover:bg-white/10 shadow-[0_8px_40px_-28px_rgba(139,92,246,0.45)]"
+    className="flex items-center justify-between rounded-3xl border border-border bg-muted/40 p-4 transition-colors hover:bg-muted/60 shadow-[0_8px_40px_-28px_rgba(139,92,246,0.45)]"
   >
                     <div className="flex items-center gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#8b5cf6]/15">
@@ -217,7 +217,7 @@ export function DashboardView() {
                         {new Date(event.date).toLocaleDateString()}
                       </p>
                       <span
-    className={`rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium ${statusColors[event.status] || "bg-white/5 text-white"}`}
+    className={`rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium ${statusColors[event.status] || "bg-muted text-muted-foreground"}`}
   >
                         {event.status}
                       </span>
@@ -250,7 +250,7 @@ export function DashboardView() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2 py-1 text-sm text-foreground shadow-sm shadow-[#8b5cf6]/10">
+                      <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2 py-1 text-sm text-foreground shadow-sm shadow-[#8b5cf6]/10">
                         {paymentIcons[sale.payment_method] || paymentIcons["Card"]}
                         <span className="text-xs font-medium text-foreground">
                           {sale.payment_method}

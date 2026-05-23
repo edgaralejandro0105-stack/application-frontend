@@ -36,7 +36,7 @@ const loginSchema = z.object({
 export function Login() {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+
   // Estado local para alternar la visibilidad de la contraseña
   const [showPassword, setShowPassword] = useState(false);
   // Estado para capturar errores que devuelve la API (ej. credenciales inválidas)
@@ -55,7 +55,7 @@ export function Login() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "rinconfrancisco10122005@gmail.com",
+      email: "javierpinto10122005@gmail.com",
       password: "admin123"
     }
   });
@@ -77,23 +77,23 @@ export function Login() {
     try {
       // Llamada al backend para autenticar
       const response = await authService.login(data);
-      
+
       // Si la API retorna un error (ej. credenciales incorrectas)
       if (response.error || !response.data) {
         setApiError(response.error ?? "Credenciales inválidas. Intenta nuevamente.");
         return;
       }
-      
+
       // Extraemos el token y los datos del usuario
       const authResponse = response.data;
       if (!authResponse.token || !authResponse.user) {
         setApiError("Hubo un problema al iniciar sesión.");
         return;
       }
-      
+
       // Guardamos la sesión en el Contexto Global
       login(authResponse.token, authResponse.user);
-      
+
       // Redirigimos al panel principal
       navigate("/");
     } catch (error) {
@@ -111,24 +111,19 @@ export function Login() {
       <div className="relative hidden w-1/2 flex-col justify-end overflow-hidden bg-zinc-900 lg:flex">
         {/* Imagen de fondo solicitada */}
         <div className="absolute inset-0">
-          <img 
-            src="/image1.png" 
-            alt="La Casona Eventos" 
-            className="h-full w-full object-cover opacity-60 mix-blend-overlay"
+          <img
+            src="/image1.png"
+            alt="La Casona Eventos"
+            className="h-full w-full object-cover opacity-80"
           />
         </div>
-        
+
         {/* Gradiente oscuro inferior para asegurar que el texto sea legible */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-        
-        {/* Contenido de texto superpuesto a la imagen */}
-        <div className="relative z-10 p-12 text-white">
-          <h2 className="mb-4 text-4xl font-bold tracking-tight">
-            La Casona
-          </h2>
-          <p className="max-w-md text-lg text-zinc-300">
-            Sistema integrado de gestión empresarial para administración de eventos, clientes e inventario.
-          </p>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+        {/* Logo centrado sobre la imagen */}
+        <div className="relative z-10 flex h-full w-full items-center justify-center">
+          <img src="/logo.png" alt="La Casona Logo" className="h-72 w-auto object-contain drop-shadow-2xl" />
         </div>
       </div>
 
@@ -138,7 +133,7 @@ export function Login() {
       */}
       <div className="flex w-full items-center justify-center lg:w-1/2 p-4 sm:p-8 md:p-12">
         <div className="mx-auto w-full max-w-md space-y-8">
-          
+
           {/* Encabezado del Formulario */}
           <div className="space-y-2 text-center lg:text-left">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -159,7 +154,7 @@ export function Login() {
 
           {/* Formulario conectado a handleSubmit de react-hook-form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            
+
             {/* Campo: Correo Electrónico */}
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium leading-none text-foreground">
@@ -171,9 +166,8 @@ export function Login() {
                 autoComplete="email"
                 placeholder="nombre@ejemplo.com"
                 /* Si hay error en 'email', cambiamos el borde a rojo, de lo contrario usamos el normal */
-                className={`flex h-12 w-full rounded-xl border bg-transparent px-4 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 ${
-                  errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-input"
-                }`}
+                className={`flex h-12 w-full rounded-xl border bg-transparent px-4 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 ${errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-input"
+                  }`}
                 {...register("email")} /* Conectamos el input con react-hook-form */
               />
               {/* Mostramos el mensaje de error de Zod si existe */}
@@ -205,12 +199,11 @@ export function Login() {
                   autoComplete="current-password"
                   placeholder="••••••••"
                   /* pr-12 para dejar espacio al ícono del ojo a la derecha */
-                  className={`flex h-12 w-full rounded-xl border bg-transparent px-4 py-2 pr-12 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 ${
-                    errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-input"
-                  }`}
+                  className={`flex h-12 w-full rounded-xl border bg-transparent px-4 py-2 pr-12 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-input"
+                    }`}
                   {...register("password")}
                 />
-                
+
                 {/* Botón para alternar visibilidad */}
                 <button
                   type="button"
@@ -251,7 +244,7 @@ export function Login() {
               )}
             </button>
           </form>
-          
+
           <div className="text-center text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} La Casona Eventos. Todos los derechos reservados.
           </div>

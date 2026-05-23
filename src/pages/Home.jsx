@@ -9,6 +9,7 @@ import { AdminView } from "@/components/views/admin-view"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { Profile } from "@/components/auth/Profile"
 import { useAuth } from "@/context/AuthContext"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { User, LogOut } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -54,7 +55,8 @@ export default function Home() {
         <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
         <main className="flex min-h-screen flex-col lg:pl-72">
           {/* HEADER / TOPBAR */}
-          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end border-b border-border/40 bg-background/40 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-2 border-b border-border/40 bg-background/40 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-xl outline-none hover:bg-accent/20 p-1 transition-colors">

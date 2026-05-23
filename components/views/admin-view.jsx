@@ -167,21 +167,21 @@ export function AdminView() {
       <div className="flex flex-wrap gap-2 rounded-2xl bg-card/70 p-2">
         <button
     onClick={() => setActiveTab("users")}
-    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-white/10"}`}
+    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted/50"}`}
   >
           <Users className="h-4 w-4" />
           Usuarios y Permisos
         </button>
         <button
     onClick={() => setActiveTab("venues")}
-    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "venues" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-white/10"}`}
+    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "venues" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted/50"}`}
   >
           <Building className="h-4 w-4" />
           Salones
         </button>
         <button
     onClick={() => setActiveTab("services")}
-    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "services" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-white/10"}`}
+    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "services" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted/50"}`}
   >
           <Briefcase className="h-4 w-4" />
           Servicios Externos
@@ -239,7 +239,7 @@ export function AdminView() {
                   <tbody className="divide-y divide-border">
                     {users.map((user) => <tr
     key={user.id}
-    className="transition-colors hover:bg-white/10"
+    className="transition-colors hover:bg-muted/50"
   >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -275,7 +275,7 @@ export function AdminView() {
                             <Button
     variant="outline"
     size="sm"
-    className="rounded-lg border-white/10 hover:bg-white/10"
+    className="rounded-lg border-border hover:bg-muted/50"
   >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -360,7 +360,7 @@ export function AdminView() {
                   <div className="flex gap-2">
                     <Button
     variant="outline"
-    className="flex-1 rounded-xl border-white/10 hover:bg-white/10"
+    className="flex-1 rounded-xl border-border hover:bg-muted/50"
   >
                       Editar
                     </Button>
@@ -429,7 +429,7 @@ export function AdminView() {
                   <tbody className="divide-y divide-border">
                     {externalServices.map((service) => <tr
     key={service.id}
-    className="transition-colors hover:bg-white/10"
+    className="transition-colors hover:bg-muted/50"
   >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -458,7 +458,7 @@ export function AdminView() {
                             <Button
     variant="outline"
     size="sm"
-    className="rounded-lg border-white/10 hover:bg-white/10"
+    className="rounded-lg border-border hover:bg-muted/50"
   >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -490,7 +490,7 @@ export function AdminView() {
               </CardTitle>
               <button
     onClick={() => setUserModalOpen(false)}
-    className="rounded-lg p-2 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+    className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
   >
                 <X className="h-5 w-5" />
               </button>
@@ -535,7 +535,7 @@ export function AdminView() {
                 <Button
     variant="outline"
     onClick={() => setUserModalOpen(false)}
-    className="rounded-xl border-white/10"
+    className="rounded-xl border-border"
   >
                   Cancelar
                 </Button>
@@ -561,7 +561,7 @@ export function AdminView() {
               </CardTitle>
               <button
     onClick={() => setVenueModalOpen(false)}
-    className="rounded-lg p-2 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+    className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
   >
                 <X className="h-5 w-5" />
               </button>
@@ -603,7 +603,7 @@ export function AdminView() {
                 <Button
     variant="outline"
     onClick={() => setVenueModalOpen(false)}
-    className="rounded-xl border-white/10"
+    className="rounded-xl border-border"
   >
                   Cancelar
                 </Button>
@@ -629,7 +629,7 @@ export function AdminView() {
               </CardTitle>
               <button
     onClick={() => setServiceModalOpen(false)}
-    className="rounded-lg p-2 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+    className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
   >
                 <X className="h-5 w-5" />
               </button>
@@ -679,7 +679,7 @@ export function AdminView() {
                 <Button
     variant="outline"
     onClick={() => setServiceModalOpen(false)}
-    className="rounded-xl border-white/10"
+    className="rounded-xl border-border"
   >
                   Cancelar
                 </Button>
