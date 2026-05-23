@@ -67,7 +67,7 @@ export function CRMView() {
         <Button
       variant="outline"
       onClick={() => setSelectedClient(null)}
-      className="rounded-xl border-white/10 hover:bg-white/10"
+      className="rounded-xl border-border hover:bg-muted/50"
     >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver a clientes
@@ -104,7 +104,7 @@ export function CRMView() {
               <div className="flex gap-3">
                 <Button
       variant="outline"
-      className="rounded-xl border-white/10 hover:bg-white/10"
+      className="rounded-xl border-border hover:bg-muted/50"
     >
                   Editar Client
                 </Button>
@@ -283,7 +283,7 @@ export function CRMView() {
                 <tbody className="divide-y divide-border">
                   {filteredClients.map((client) => <tr
     key={client.id}
-    className="cursor-pointer transition-colors hover:bg-white/10"
+    className="cursor-pointer transition-colors hover:bg-muted/50"
     onClick={() => setSelectedClient(client)}
   >
                       <td className="px-6 py-4">
@@ -322,7 +322,7 @@ export function CRMView() {
                         <Button
     variant="outline"
     size="sm"
-    className="rounded-lg border-white/10 text-xs hover:bg-white/10"
+    className="rounded-lg border-border text-xs hover:bg-muted/50"
     onClick={(e) => {
       e.stopPropagation();
       setSelectedClient(client);
@@ -349,7 +349,7 @@ export function CRMView() {
               </CardTitle>
               <button
     onClick={() => setModalOpen(false)}
-    className="rounded-lg p-2 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+    className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
   >
                 <X className="h-5 w-5" />
               </button>
@@ -399,7 +399,7 @@ export function CRMView() {
                 <Button
     variant="outline"
     onClick={() => setModalOpen(false)}
-    className="rounded-xl border-white/10"
+    className="rounded-xl border-border"
   >
                   Cancelar
                 </Button>

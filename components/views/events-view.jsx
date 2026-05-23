@@ -250,7 +250,7 @@ export function EventsView() {
     variant="outline"
     size="sm"
     onClick={prevMonth}
-    className="rounded-lg border-white/10 hover:bg-white/10"
+    className="rounded-lg border-border hover:bg-muted/50"
   >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -258,7 +258,7 @@ export function EventsView() {
     variant="outline"
     size="sm"
     onClick={nextMonth}
-    className="rounded-lg border-white/10 hover:bg-white/10"
+    className="rounded-lg border-border hover:bg-muted/50"
   >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -286,7 +286,7 @@ export function EventsView() {
     const isToday = day === 15;
     return <div
       key={index}
-      className={`min-h-24 rounded-xl border p-2 transition-all ${day ? "border-white/10 bg-card/70 hover:border-[#f472b6]/50" : "border-transparent bg-card/30"} ${isToday ? "ring-2 ring-[#f472b6]" : ""}`}
+      className={`min-h-24 rounded-xl border p-2 transition-all ${day ? "border-border bg-card/70 hover:border-[#f472b6]/50" : "border-transparent bg-card/30"} ${isToday ? "ring-2 ring-[#f472b6]" : ""}`}
     >
                     {day && <>
                         <span
@@ -368,7 +368,7 @@ export function EventsView() {
                   <div className="flex gap-2">
                     <Button
     variant="outline"
-    className="rounded-xl border-white/10 hover:bg-white/10"
+    className="rounded-xl border-border hover:bg-muted/50"
   >
                       Ver Detalles
                     </Button>
@@ -395,7 +395,7 @@ export function EventsView() {
               </CardTitle>
               <button
     onClick={resetWizard}
-    className="rounded-lg p-2 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+    className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
   >
                 <X className="h-5 w-5" />
               </button>
@@ -417,7 +417,7 @@ export function EventsView() {
                       </span>
                     </div>
                     {index < wizardSteps.length - 1 && <div
-    className={`mx-4 h-0.5 flex-1 ${wizardStep > step.id ? "bg-accent" : "bg-white/10"}`}
+    className={`mx-4 h-0.5 flex-1 ${wizardStep > step.id ? "bg-accent" : "bg-muted/50"}`}
   />}
                   </div>)}
               </div>
@@ -576,7 +576,7 @@ export function EventsView() {
                 <Button
     variant="outline"
     onClick={() => wizardStep > 1 ? setWizardStep(wizardStep - 1) : resetWizard()}
-    className="rounded-xl border-white/10"
+    className="rounded-xl border-border"
   >
                   {wizardStep > 1 ? "Anterior" : "Cancelar"}
                 </Button>

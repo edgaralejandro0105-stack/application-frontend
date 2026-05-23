@@ -4,24 +4,24 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #050816;
-  --foreground: #e2e8f0;
-  --card: rgba(15, 23, 42, 0.75);
-  --card-foreground: #f8fafc;
-  --popover: rgba(15, 23, 42, 0.9);
-  --popover-foreground: #f8fafc;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
   --primary: #8b5cf6;
   --primary-foreground: #ffffff;
-  --secondary: #0ea5e9;
-  --secondary-foreground: #ffffff;
-  --muted: rgba(15, 23, 42, 0.65);
-  --muted-foreground: #94a3b8;
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
   --accent: #f472b6;
   --accent-foreground: #ffffff;
   --destructive: #fb7185;
   --destructive-foreground: #ffffff;
-  --border: rgba(148, 163, 184, 0.2);
-  --input: rgba(15, 23, 42, 0.9);
+  --border: #e2e8f0;
+  --input: #e2e8f0;
   --ring: #8b5cf6;
   --chart-1: #8b5cf6;
   --chart-2: #0ea5e9;
@@ -29,14 +29,17 @@
   --chart-4: #38bdf8;
   --chart-5: #facc15;
   --radius: 1.25rem;
-  --sidebar: rgba(7, 12, 28, 0.95);
-  --sidebar-foreground: #f8fafc;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
   --sidebar-primary: #8b5cf6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #0ea5e9;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(139, 92, 246, 0.3);
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
   --sidebar-ring: #8b5cf6;
+  --bg-gradient-from: #f8fafc;
+  --bg-gradient-via: #f1f5f9;
+  --bg-gradient-to: #f8fafc;
 }
 
 .dark {
@@ -72,10 +75,14 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(139, 92, 246, 0.3);
   --sidebar-ring: #8b5cf6;
+  --bg-gradient-from: #050816;
+  --bg-gradient-via: #060b17;
+  --bg-gradient-to: #050816;
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
+  --font-sans: 'Outfit', sans-serif;
+  --font-serif: 'Playfair Display', serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -120,6 +127,10 @@
     @apply border-border outline-ring/50;
   }
 
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+  }
+
   html {
     scroll-behavior: smooth;
   }
@@ -131,7 +142,7 @@
       radial-gradient(circle at top left, rgba(139, 92, 246, 0.18), transparent 18%),
       radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 20%),
       radial-gradient(circle at bottom left, rgba(244, 114, 182, 0.12), transparent 22%),
-      linear-gradient(180deg, #050816 0%, #060b17 35%, #050816 100%);
+      linear-gradient(180deg, var(--bg-gradient-from) 0%, var(--bg-gradient-via) 35%, var(--bg-gradient-to) 100%);
     background-attachment: fixed;
     color: var(--foreground);
     -webkit-font-smoothing: antialiased;

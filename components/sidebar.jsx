@@ -113,8 +113,8 @@ export function Sidebar({ activeSection, onSectionChange }) {
     */
   }
         <div className="flex items-center gap-3 border-b border-sidebar-border px-6 py-6">
-          <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-primary">
-            <img src="/logo.jpeg" alt="Logo La Casona" className={"object-cover"} />
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl">
+            <img src="/logo2.png" alt="Logo La Casona" className="h-full w-full object-contain dark:invert-0 invert" />
           </div>
           <div>
             <h1 className="text-lg font-semibold tracking-tight">La Casona</h1>
@@ -167,10 +167,9 @@ export function Sidebar({ activeSection, onSectionChange }) {
     */
   }
         <div className="border-t border-sidebar-border p-4 space-y-3">
-          {
-    /* Información de la app */
-  }
-          <div className="rounded-xl bg-sidebar-accent/50 p-4">
+        {
+          /* Información de la app */
+        }      <div className="rounded-xl bg-sidebar-accent/50 p-4">
             <p className="text-xs text-sidebar-foreground/60">
               La Casona Events
             </p>

@@ -336,7 +336,7 @@ export function HRView() {
                   <tbody className="divide-y divide-border">
                     {filteredEmployees.map((employee) => <tr
     key={employee.id}
-    className="transition-colors hover:bg-white/10"
+    className="transition-colors hover:bg-muted/50"
   >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -386,7 +386,7 @@ export function HRView() {
                           <Button
     variant="outline"
     size="sm"
-    className="rounded-lg border-white/10 text-xs hover:bg-white/10"
+    className="rounded-lg border-border text-xs hover:bg-muted/50"
   >
                             Ver perfil
                           </Button>
@@ -484,7 +484,7 @@ export function HRView() {
   >
                       <CardHeader className="bg-[#1d3557] pb-3 pt-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/50">
                             <span className="text-sm font-semibold text-white">
                               {employee.name.split(" ").map((n) => n[0]).join("")}
                             </span>
@@ -537,7 +537,7 @@ export function HRView() {
               </CardTitle>
               <button
     onClick={() => setModalOpen(false)}
-    className="rounded-lg p-2 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+    className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
   >
                 <X className="h-5 w-5" />
               </button>
@@ -594,7 +594,7 @@ export function HRView() {
                 <Button
     variant="outline"
     onClick={() => setModalOpen(false)}
-    className="rounded-xl border-white/10"
+    className="rounded-xl border-border"
   >
                   Cancelar
                 </Button>

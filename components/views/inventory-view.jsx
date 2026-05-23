@@ -282,14 +282,14 @@ export function InventoryView() {
       <div className="flex flex-wrap gap-2 rounded-2xl bg-card/70 p-2">
         <button
     onClick={() => setActiveTab("catalog")}
-    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${activeTab === "catalog" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${activeTab === "catalog" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
   >
           <Package className="h-4 w-4" />
           Catálogo de productos ({products.length})
         </button>
         <button
     onClick={() => setActiveTab("history")}
-    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${activeTab === "history" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${activeTab === "history" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
   >
           <History className="h-4 w-4" />
           Historial de movimientos ({movements.length})
@@ -370,7 +370,7 @@ export function InventoryView() {
     const IconComponent = categoryIcons[product.category] || Package;
     return <tr
       key={product.product_id}
-      className={`transition-colors hover:bg-white/10 ${isLowStock ? "bg-[#c05c3c]/5" : ""}`}
+      className={`transition-colors hover:bg-muted/50 ${isLowStock ? "bg-[#c05c3c]/5" : ""}`}
     >
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
@@ -506,7 +506,7 @@ export function InventoryView() {
       movementLabel = "Salida";
       badgeBg = "bg-[#c05c3c]";
     }
-    return <tr key={movement.inventory_id} className="transition-colors hover:bg-white/10">
+    return <tr key={movement.inventory_id} className="transition-colors hover:bg-muted/50">
                           <td className="px-6 py-4">
                             <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white ${badgeBg}`}>
                               {movementLabel}
