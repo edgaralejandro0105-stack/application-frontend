@@ -234,14 +234,16 @@ export function InventoryView() {
         </div>
       </div>;
   }
-  return <div className="space-y-8">
+  return (
+    <>
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {
     /* Header */
   }
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Inventario y Bar
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Inventario y Operaciones
           </h1>
           <p className="mt-1 text-muted-foreground">
             Controla productos, existencias y movimientos.
@@ -249,7 +251,7 @@ export function InventoryView() {
         </div>
         <Button
     onClick={openAddProductModal}
-    className="rounded-xl bg-[#c05c3c] text-white shadow-md hover:bg-[#a84d32] transition-all duration-300"
+    className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
   >
           <Plus className="mr-2 h-4 w-4" />
           Agregar Producto
@@ -279,7 +281,7 @@ export function InventoryView() {
       {
     /* Tabs */
   }
-      <div className="flex flex-wrap gap-2 rounded-2xl bg-card/70 p-2">
+      <div className="flex flex-wrap gap-2 rounded-2xl bg-card/40 p-2 backdrop-blur-md shadow-sm border border-border/50">
         <button
     onClick={() => setActiveTab("catalog")}
     className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${activeTab === "catalog" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
@@ -303,29 +305,29 @@ export function InventoryView() {
           {
     /* Search & Filter */
   }
-          <Card className="rounded-2xl border-none shadow-md">
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
+            <CardContent className="p-0">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
     placeholder="Buscar productos..."
     value={searchTerm}
     onChange={(e) => setSearchTerm(e.target.value)}
-    className="rounded-xl border-input pl-10 focus:ring-2 focus:ring-[#c05c3c]"
+    className="h-9 rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
   />
                 </div>
                 <div className="relative w-full sm:w-48">
                   <select
     value={filterCategory}
     onChange={(e) => setFilterCategory(e.target.value)}
-    className="w-full appearance-none rounded-xl border border-input bg-background px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+    className="h-9 appearance-none rounded-lg border border-input bg-background pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
   >
                     {categories.map((cat) => <option key={cat} value={cat}>
                         {cat === "All" ? "Todos" : cat}
                       </option>)}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -334,7 +336,7 @@ export function InventoryView() {
           {
     /* Products Table */
   }
-          <Card className="mt-4 overflow-hidden rounded-2xl border-none shadow-md">
+          <Card className="mt-4 overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -370,7 +372,7 @@ export function InventoryView() {
     const IconComponent = categoryIcons[product.category] || Package;
     return <tr
       key={product.product_id}
-      className={`transition-colors hover:bg-muted/50 ${isLowStock ? "bg-[#c05c3c]/5" : ""}`}
+      className={`transition-all duration-300 hover:bg-muted/60 hover:shadow-sm ${isLowStock ? "bg-[#c05c3c]/5" : ""}`}
     >
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
@@ -454,7 +456,7 @@ export function InventoryView() {
       {
     /* History View */
   }
-      {activeTab === "history" && <Card className="overflow-hidden rounded-2xl border-none shadow-md">
+      {activeTab === "history" && <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
               <History className="h-5 w-5 text-[#c05c3c]" />
@@ -506,7 +508,7 @@ export function InventoryView() {
       movementLabel = "Salida";
       badgeBg = "bg-[#c05c3c]";
     }
-    return <tr key={movement.inventory_id} className="transition-colors hover:bg-muted/50">
+    return <tr key={movement.inventory_id} className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm">
                           <td className="px-6 py-4">
                             <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white ${badgeBg}`}>
                               {movementLabel}
@@ -534,12 +536,13 @@ export function InventoryView() {
             </div>
           </CardContent>
         </Card>}
+      </div>
 
       {
     /* Movement Modal */
   }
-      {movementModalOpen && selectedProduct && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all">
-          <Card className="w-full max-w-md rounded-2xl border-none shadow-2xl p-6 bg-card max-h-[90vh] overflow-y-auto">
+      {movementModalOpen && selectedProduct && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all animate-in fade-in duration-300">
+          <Card className="w-full max-w-md rounded-3xl border border-white/20 shadow-2xl p-6 bg-card max-h-[90vh] overflow-y-auto">
             <CardHeader className="p-0 mb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold text-foreground">
@@ -618,7 +621,7 @@ export function InventoryView() {
                 </Button>
                 <Button
     type="submit"
-    className="flex-1 rounded-xl bg-[#c05c3c] text-white hover:bg-[#a84d32]"
+    className="flex-1 rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
   >
                   Guardar movimiento
                 </Button>
@@ -630,8 +633,8 @@ export function InventoryView() {
       {
     /* Product Modal */
   }
-      {productModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all">
-          <Card className="w-full max-w-md rounded-2xl border-none shadow-2xl p-6 bg-card max-h-[95vh] overflow-y-auto">
+      {productModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all animate-in fade-in duration-300">
+          <Card className="w-full max-w-md rounded-3xl border border-white/20 shadow-2xl p-6 bg-card max-h-[95vh] overflow-y-auto">
             <CardHeader className="p-0 mb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold text-foreground">
@@ -731,7 +734,7 @@ export function InventoryView() {
                 </Button>
                 <Button
     type="submit"
-    className="flex-1 rounded-xl bg-[#c05c3c] text-white hover:bg-[#a84d32]"
+    className="flex-1 rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
   >
                   {isEditingProduct ? "Guardar cambios" : "Crear producto"}
                 </Button>
@@ -739,5 +742,6 @@ export function InventoryView() {
             </form>
           </Card>
         </div>}
-    </div>;
+    </>
+  );
 }
