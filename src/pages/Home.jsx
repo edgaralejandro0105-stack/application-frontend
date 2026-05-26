@@ -6,6 +6,8 @@ import { CRMView } from "@/components/views/crm-view"
 import { InventoryView } from "@/components/views/inventory-view"
 import { HRView } from "@/components/views/hr-view"
 import { AdminView } from "@/components/views/admin-view"
+import { SalesList } from "@/components/views/sales-list"
+import { CreateSale } from "@/components/views/create-sale"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { Profile } from "@/components/auth/Profile"
 import { useAuth } from "@/context/AuthContext"
@@ -40,6 +42,10 @@ export default function Home() {
         return <InventoryView />
       case "hr":
         return <HRView />
+      case "sales":
+        return <SalesList onNavigate={setActiveSection} />
+      case "create-sale":
+        return <CreateSale onNavigate={setActiveSection} />
       case "admin":
         return <AdminView />
       case "profile":

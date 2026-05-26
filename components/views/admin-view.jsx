@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiClient, extractList } from "@/lib/api-client";
 import {
   Users,
   Building,
@@ -16,40 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-const users = [
-  {
-    id: 1,
-    name: "Lead Admin",
-    email: "admin@mediterraneo.com",
-    role: "Administrador",
-    lastLogin: "23 Dec, 2026",
-    status: "Activo"
-  },
-  {
-    id: 2,
-    name: "Ana Lopez",
-    email: "ana.lopez@mediterraneo.com",
-    role: "Coordinador",
-    lastLogin: "22 Dec, 2026",
-    status: "Activo"
-  },
-  {
-    id: 3,
-    name: "Miguel Santos",
-    email: "miguel.santos@mediterraneo.com",
-    role: "Chef Principal",
-    lastLogin: "21 Dec, 2026",
-    status: "Activo"
-  },
-  {
-    id: 4,
-    name: "Laura Fernandez",
-    email: "laura.fernandez@mediterraneo.com",
-    role: "Gerente de bar",
-    lastLogin: "20 Dec, 2026",
-    status: "Inactivo"
-  }
-];
+// Users will be loaded dynamically from the backend
 const venues = [
   {
     id: 1,
@@ -139,6 +107,9 @@ const venueStatuses = ["Disponible", "Ocupado", "Mantenimiento"];
 const statusColors = {
   Activo: "bg-[#6b705c] text-white",
   Inactivo: "bg-card/80 text-[#6b705c]",
+  active: "bg-[#6b705c] text-white",
+  inactive: "bg-card/80 text-[#6b705c]",
+  suspended: "bg-[#c05c3c]/10 text-[#c05c3c]",
   Disponible: "bg-[#6b705c] text-white",
   Ocupado: "bg-[#c05c3c] text-white",
   Mantenimiento: "bg-[#d4a574] text-white"
@@ -148,12 +119,49 @@ export function AdminView() {
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [venueModalOpen, setVenueModalOpen] = useState(false);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
-  return <div className="space-y-8">
+
+  // States for Users
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await apiClient.get('/users');
+      if (!response.error) {
+        setUsers(extractList(response.data));
+      }
+    } catch (err) {
+      console.error("Error al cargar usuarios:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "users") {
+      loadUsers();
+    }
+  }, [activeTab]);
+
+  const handleDeleteUser = async (id) => {
+    if (window.confirm("¿Estás seguro de que deseas eliminar este usuario?")) {
+      try {
+        await apiClient.delete(`/users/${id}`);
+        loadUsers();
+      } catch (err) {
+        alert("Error al eliminar el usuario");
+      }
+    }
+  };
+  return (
+    <>
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {
     /* Header */
   }
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Administración
         </h1>
         <p className="mt-1 text-muted-foreground">
@@ -164,24 +172,24 @@ export function AdminView() {
       {
     /* Tabs */
   }
-      <div className="flex flex-wrap gap-2 rounded-2xl bg-card/70 p-2">
+      <div className="flex flex-wrap gap-2 rounded-2xl bg-card/40 p-2 backdrop-blur-md shadow-sm border border-border/50">
         <button
     onClick={() => setActiveTab("users")}
-    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted/50"}`}
+    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ${activeTab === "users" ? "bg-primary text-primary-foreground shadow-md scale-105" : "text-foreground hover:bg-muted/50 hover:scale-105"}`}
   >
           <Users className="h-4 w-4" />
           Usuarios y Permisos
         </button>
         <button
     onClick={() => setActiveTab("venues")}
-    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "venues" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted/50"}`}
+    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ${activeTab === "venues" ? "bg-primary text-primary-foreground shadow-md scale-105" : "text-foreground hover:bg-muted/50 hover:scale-105"}`}
   >
           <Building className="h-4 w-4" />
           Salones
         </button>
         <button
     onClick={() => setActiveTab("services")}
-    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === "services" ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted/50"}`}
+    className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ${activeTab === "services" ? "bg-primary text-primary-foreground shadow-md scale-105" : "text-foreground hover:bg-muted/50 hover:scale-105"}`}
   >
           <Briefcase className="h-4 w-4" />
           Servicios Externos
@@ -191,29 +199,25 @@ export function AdminView() {
       {
     /* Users Tab */
   }
-      {activeTab === "users" && <div className="space-y-6">
+      {activeTab === "users" && <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <Card className="flex-1 rounded-2xl border-none shadow-md">
-              <CardContent className="p-4">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-    placeholder="Buscar usuarios..."
-    className="rounded-xl border-input pl-10 focus:ring-2 focus:ring-[#c05c3c]"
-  />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar usuarios..."
+                className="h-9 rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
+              />
+            </div>
             <Button
-    onClick={() => setUserModalOpen(true)}
-    className="rounded-xl bg-[#c05c3c] text-white shadow-md hover:bg-[#a84d32]"
-  >
+              onClick={() => setUserModalOpen(true)}
+              className="h-9 rounded-lg bg-[#c05c3c] text-white shadow-md hover:bg-[#a84d32] px-4 text-sm"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Nuevo usuario
             </Button>
           </div>
 
-          <Card className="overflow-hidden rounded-2xl border-none shadow-md">
+          <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -237,13 +241,26 @@ export function AdminView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {users.map((user) => <tr
-    key={user.id}
-    className="transition-colors hover:bg-muted/50"
-  >
+                    {loadingUsers ? (
+                      <tr>
+                        <td colSpan="5" className="px-6 py-4 text-center text-muted-foreground">
+                          Cargando usuarios...
+                        </td>
+                      </tr>
+                    ) : users.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="px-6 py-4 text-center text-muted-foreground">
+                          No hay usuarios registrados.
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((user) => <tr
+                        key={user.user_id}
+                        className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm"
+                      >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1d3557]/10">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#1d3557]/20 to-[#1d3557]/5 border border-[#1d3557]/10">
                               <span className="text-sm font-semibold text-[#1d3557]">
                                 {user.name.split(" ").map((n) => n[0]).join("")}
                               </span>
@@ -257,17 +274,17 @@ export function AdminView() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <Shield className="h-4 w-4 text-[#6b705c]" />
-                            <span className="text-sm text-foreground">{user.role}</span>
+                            <span className="text-sm text-foreground">{user.Role?.name || "Administrador"}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm text-muted-foreground">{user.lastLogin}</p>
+                          <p className="text-sm text-muted-foreground">{new Date(user.create_at).toLocaleDateString()}</p>
                         </td>
                         <td className="px-6 py-4">
                           <span
-    className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[user.status]}`}
+    className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[user.status] || "bg-gray-200"}`}
   >
-                            {user.status}
+                            {user.status === "active" ? "Activo" : user.status === "inactive" ? "Inactivo" : user.status === "suspended" ? "Suspendido" : user.status}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -282,13 +299,15 @@ export function AdminView() {
                             <Button
     variant="outline"
     size="sm"
+    onClick={() => handleDeleteUser(user.user_id)}
     className="rounded-lg border-[#c05c3c] text-[#c05c3c] hover:bg-[#c05c3c]/10"
   >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </td>
-                      </tr>)}
+                      </tr>)
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -299,9 +318,9 @@ export function AdminView() {
       {
     /* Venues Tab */
   }
-      {activeTab === "venues" && <div className="space-y-6">
+      {activeTab === "venues" && <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <Card className="flex-1 rounded-2xl border-none shadow-md">
+            <Card className="flex-1 rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
               <CardContent className="p-4">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -314,21 +333,21 @@ export function AdminView() {
             </Card>
             <Button
     onClick={() => setVenueModalOpen(true)}
-    className="rounded-xl bg-[#c05c3c] text-white shadow-md hover:bg-[#a84d32]"
+    className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
   >
               <Plus className="mr-2 h-4 w-4" />
               Nuevo salón
             </Button>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {venues.map((venue) => <Card
     key={venue.id}
-    className="overflow-hidden rounded-2xl border-none shadow-md transition-all hover:shadow-lg"
+    className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40"
   >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1d3557]/10">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1d3557]/20 to-[#1d3557]/5 border border-[#1d3557]/10">
                       <Building className="h-6 w-6 text-[#1d3557]" />
                     </div>
                     <span
@@ -381,9 +400,9 @@ export function AdminView() {
       {
     /* External Services Tab */
   }
-      {activeTab === "services" && <div className="space-y-6">
+      {activeTab === "services" && <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <Card className="flex-1 rounded-2xl border-none shadow-md">
+            <Card className="flex-1 rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
               <CardContent className="p-4">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -396,14 +415,14 @@ export function AdminView() {
             </Card>
             <Button
     onClick={() => setServiceModalOpen(true)}
-    className="rounded-xl bg-[#c05c3c] text-white shadow-md hover:bg-[#a84d32]"
+    className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
   >
               <Plus className="mr-2 h-4 w-4" />
               Nuevo servicio
             </Button>
           </div>
 
-          <Card className="overflow-hidden rounded-2xl border-none shadow-md">
+          <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -429,11 +448,11 @@ export function AdminView() {
                   <tbody className="divide-y divide-border">
                     {externalServices.map((service) => <tr
     key={service.id}
-    className="transition-colors hover:bg-muted/50"
+    className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm"
   >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#6b705c]/10">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#6b705c]/20 to-[#6b705c]/5 border border-[#6b705c]/10">
                               <Briefcase className="h-5 w-5 text-[#6b705c]" />
                             </div>
                             <p className="font-medium text-foreground">{service.name}</p>
@@ -478,12 +497,13 @@ export function AdminView() {
             </CardContent>
           </Card>
         </div>}
+      </div>
 
       {
     /* Create User Modal */
   }
-      {userModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md rounded-2xl border-none shadow-2xl">
+      {userModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
+          <Card className="w-full max-w-md rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
             <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
               <CardTitle className="text-xl font-semibold text-foreground">
                 Nuevo Usuario
@@ -553,8 +573,8 @@ export function AdminView() {
       {
     /* Create Venue Modal */
   }
-      {venueModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md rounded-2xl border-none shadow-2xl">
+      {venueModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
+          <Card className="w-full max-w-md rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
             <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
               <CardTitle className="text-xl font-semibold text-foreground">
                 Nuevo Salón
@@ -621,8 +641,8 @@ export function AdminView() {
       {
     /* Create Service Modal */
   }
-      {serviceModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md rounded-2xl border-none shadow-2xl">
+      {serviceModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
+          <Card className="w-full max-w-md rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
             <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
               <CardTitle className="text-xl font-semibold text-foreground">
                 Nuevo Servicio
@@ -693,5 +713,6 @@ export function AdminView() {
             </CardContent>
           </Card>
         </div>}
-    </div>;
+    </>
+  );
 }
