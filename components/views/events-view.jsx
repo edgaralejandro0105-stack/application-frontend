@@ -501,6 +501,7 @@ export function EventsView() {
           )}
         </div>
       )}
+      </div>
 
       {/* RESTAURADO: WIZARD COMPLETO DE 4 PASOS */}
       {modalOpen && (
@@ -776,7 +777,6 @@ export function EventsView() {
           </Card>
         </div>
       )}
-      </div>
     </>
   );
 }

@@ -100,7 +100,7 @@ export function CreateSale({ onNavigate }) {
             : item
         );
       }
-      return [...prev, { ...product, quantity: 1, unit_price: product.price || 0 }];
+      return [...prev, { ...product, quantity: 1, unit_price: product.unit_price || 0 }];
     });
   };
 
@@ -242,8 +242,10 @@ export function CreateSale({ onNavigate }) {
                         <p className="font-semibold text-sm leading-tight text-foreground line-clamp-2">
                           {product.name}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Stock: {product.current_stock ?? 0}
+                        <p className="text-xs text-muted-foreground mt-1 flex justify-center gap-2">
+                          <span>Stock: {product.current_stock ?? 0}</span>
+                          <span>•</span>
+                          <span className="font-medium text-[#6b705c]">${Number(product.unit_price || 0).toFixed(2)}</span>
                         </p>
                       </div>
                     </CardContent>

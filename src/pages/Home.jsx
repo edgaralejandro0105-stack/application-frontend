@@ -8,6 +8,7 @@ import { HRView } from "@/components/views/hr-view"
 import { AdminView } from "@/components/views/admin-view"
 import { SalesList } from "@/components/views/sales-list"
 import { CreateSale } from "@/components/views/create-sale"
+import { ProvidersView } from "@/components/views/providers-view"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { Profile } from "@/components/auth/Profile"
 import { useAuth } from "@/context/AuthContext"
@@ -46,6 +47,8 @@ export default function Home() {
         return <SalesList onNavigate={setActiveSection} />
       case "create-sale":
         return <CreateSale onNavigate={setActiveSection} />
+      case "providers":
+        return <ProvidersView />
       case "admin":
         return <AdminView />
       case "profile":
