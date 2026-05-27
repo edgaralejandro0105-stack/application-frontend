@@ -54,6 +54,7 @@ export function InventoryView() {
   const [productExpiry, setProductExpiry] = useState("");
   const [productStock, setProductStock] = useState(0);
   const [productMinStock, setProductMinStock] = useState(0);
+  const [productPrice, setProductPrice] = useState("");
   const categories = ["All", "Beverages", "Catering", "Decoracion", "Furniture", "Table Linens", "Glassware", "Floral", "Bar", "General"];
   const formCategories = ["Beverages", "Catering", "Decoracion", "Furniture", "Table Linens", "Glassware", "Floral", "Bar", "General"];
   const loadData = async () => {
@@ -115,6 +116,7 @@ export function InventoryView() {
     setProductExpiry("");
     setProductStock(0);
     setProductMinStock(0);
+    setProductPrice("");
     setProductModalOpen(true);
   };
   const openEditProductModal = (product) => {
@@ -126,6 +128,7 @@ export function InventoryView() {
     setProductExpiry(product.expiry_date ? product.expiry_date.substring(0, 10) : "");
     setProductStock(product.current_stock || 0);
     setProductMinStock(product.min_stock || 0);
+    setProductPrice(product.unit_price || "");
     setProductModalOpen(true);
   };
   const openMovementModal = (product) => {
@@ -147,7 +150,8 @@ export function InventoryView() {
       measurement_unit: productUnit,
       expiry_date: productExpiry || void 0,
       min_stock: Number(productMinStock),
-      current_stock: Number(productStock)
+      current_stock: Number(productStock),
+      unit_price: productPrice ? Number(productPrice) : 0
     };
     try {
       let res;
@@ -349,6 +353,12 @@ export function InventoryView() {
                         Categoría
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                        Unidad
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                        Precio
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
                         Stock mínimo
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
@@ -398,17 +408,22 @@ export function InventoryView() {
                                 {product.category}
                               </span>
                             </td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center rounded-full bg-secondary/50 px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+                                {product.measurement_unit}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-semibold text-[#6b705c]">
+                              ${Number(product.unit_price || 0).toFixed(2)}
+                            </td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
-                              {product.min_stock} {product.measurement_unit}
+                              {product.min_stock}
                             </td>
                             <td className="px-6 py-4">
                               <p
       className={`text-base font-bold ${isLowStock ? "text-[#c05c3c]" : "text-[#6b705c]"}`}
     >
-                                {product.current_stock ?? 0}{" "}
-                                <span className="text-sm font-normal text-muted-foreground">
-                                  {product.measurement_unit}
-                                </span>
+                                {product.current_stock ?? 0}
                               </p>
                             </td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
@@ -720,6 +735,19 @@ export function InventoryView() {
     value={productStock}
     onChange={(e) => setProductStock(Number(e.target.value))}
     className="mt-1 rounded-xl"
+  />
+              </div>
+
+              <div>
+                <Label className="text-sm font-semibold">Precio unitario ($)</Label>
+                <Input
+    type="number"
+    step="0.01"
+    min="0"
+    value={productPrice}
+    onChange={(e) => setProductPrice(e.target.value)}
+    className="mt-1 rounded-xl"
+    placeholder="0.00"
   />
               </div>
 

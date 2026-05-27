@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   LogOut,
-  Receipt
+  Receipt,
+  Truck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -21,6 +22,7 @@ const navItems = [
   { id: "events", label: "Eventos", icon: <Calendar className="h-5 w-5" /> },
   { id: "crm", label: "Clientes (CRM)", icon: <Users className="h-5 w-5" /> },
   { id: "inventory", label: "Inventario", icon: <Package className="h-5 w-5" /> },
+  { id: "providers", label: "Proveedores", icon: <Truck className="h-5 w-5" /> },
   { id: "hr", label: "Recursos Humanos", icon: <UserCog className="h-5 w-5" /> },
   { id: "admin", label: "Administraci\xF3n", icon: <Settings className="h-5 w-5" /> }
 ];

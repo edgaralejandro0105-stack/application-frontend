@@ -1,737 +1,258 @@
-# CoreUI Free React Admin Template - Architecture
+# La Casona - Arquitectura del Frontend
 
-This document provides a comprehensive overview of the CoreUI Free React Admin Template architecture, design patterns, and technical implementation details.
-
-## Table of Contents
-
-- [Project Overview](#project-overview)
-- [Technology Stack](#technology-stack)
-- [Architectural Pattern](#architectural-pattern)
-- [Directory Structure](#directory-structure)
-- [Core Components](#core-components)
-- [Routing System](#routing-system)
-- [State Management](#state-management)
-- [Styling Architecture](#styling-architecture)
-- [Build System](#build-system)
-- [Performance Optimizations](#performance-optimizations)
-- [Browser Support](#browser-support)
-
-## Project Overview
-
-The CoreUI Free React Admin Template is a professional admin dashboard built on React 19, CoreUI React components, and Bootstrap 5. It follows modern React patterns with functional components, Hooks, and a component-based architecture.
-
-**Key Features**:
-- Single Page Application (SPA) with client-side routing
-- Responsive design with Bootstrap 5 grid system
-- Dark/Light theme support with automatic detection
-- Lazy loading and code splitting for optimal performance
-- Redux-based state management
-- Modular and extensible component architecture
-
-## Technology Stack
-
-### Frontend Core
-
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React | 19.2.3 | UI library for building component-based interfaces |
-| React DOM | 19.2.3 | DOM rendering and manipulation |
-| React Router DOM | 7.11.0 | Client-side routing and navigation |
-| Redux | 5.0.1 | Predictable state container |
-| React-Redux | 9.2.0 | React bindings for Redux |
-
-### UI Framework
-
-| Library | Version | Purpose |
-|---------|---------|---------|
-| @coreui/coreui | 5.5.0 | CoreUI CSS framework based on Bootstrap 5 |
-| @coreui/react | 5.9.2 | CoreUI React components |
-| @coreui/icons | 3.0.1 | CoreUI icon set |
-| @coreui/icons-react | 2.3.0 | CoreUI icons as React components |
-| @coreui/utils | 2.0.2 | Utility functions for CoreUI |
-| simplebar-react | 3.3.2 | Custom scrollbar component |
-
-### Data Visualization
-
-| Library | Version | Purpose |
-|---------|---------|---------|
-| Chart.js | 4.5.1 | HTML5 charting library |
-| @coreui/chartjs | 4.1.0 | CoreUI Chart.js themes and defaults |
-| @coreui/react-chartjs | 3.0.0 | React wrapper for Chart.js with CoreUI styling |
-
-### Build Tools & Development
-
-| Tool | Version | Purpose |
-|------|---------|---------|
-| Vite | 7.3.0 | Fast build tool and dev server with HMR |
-| @vitejs/plugin-react | 5.1.2 | Vite plugin for React Fast Refresh |
-| Sass | 1.97.0 | CSS preprocessor for styling |
-| PostCSS | 8.5.6 | CSS transformation with autoprefixer |
-| Autoprefixer | 10.4.23 | Automatic vendor prefixing |
-| ESLint | 9.39.2 | JavaScript linting and code quality |
-| Prettier | 3.7.4 | Code formatting |
-
-### Utilities
-
-| Library | Version | Purpose |
-|---------|---------|---------|
-| classnames | 2.5.1 | Conditional CSS class management |
-| prop-types | 15.8.1 | Runtime type checking for React props |
-| core-js | 3.47.0 | Polyfills for JavaScript features |
-| @popperjs/core | 2.11.8 | Tooltip and popover positioning |
-
-## Architectural Pattern
-
-### Component-Based Architecture
-
-The application follows a **functional component architecture** with React Hooks:
-
-```
-┌──────────────────────────────────────────┐
-│           Application (App.js)           │
-│  - HashRouter                            │
-│  - Theme Management                      │
-│  - Route Configuration                   │
-└──────────────────────────────────────────┘
-                    ↓
-    ┌───────────────┴────────────────┐
-    │                                │
-┌───▼────┐                  ┌────────▼───────┐
-│ Public │                  │   Protected    │
-│ Routes │                  │     Routes     │
-│        │                  │ (DefaultLayout)│
-│ Login  │                  └───────┬────────┘
-│Register│                          │
-│ 404    │              ┌───────────┼────────────┐
-│ 500    │              │           │            │
-└────────┘         ┌────▼────┐ ┌────▼─────┐ ┌────▼─────┐
-                   │AppHeader│ │AppSidebar│ │AppContent│
-                   └─────────┘ └──────────┘ └────┬─────┘
-                                                 │
-                                         ┌───────▼─────────┐
-                                         │ View Components │
-                                         │ (Dashboard,     │
-                                         │  Forms, etc.)   │
-                                         └─────────────────┘
-```
-
-### Single Page Application (SPA) Pattern
-
-The template uses client-side routing with HashRouter:
-1. **Initial Load**: HTML shell loads, React initializes
-2. **Route Matching**: React Router matches URL to component
-3. **Lazy Loading**: Component bundles load on-demand
-4. **Rendering**: Component renders with layout wrapper
-5. **Navigation**: Client-side transitions without page reload
-
-### State Management Pattern
-
-Redux manages global application state:
-
-```javascript
-Store (store.js)
-  ├── theme (light/dark/auto)
-  ├── sidebarShow (boolean)
-  └── sidebarUnfoldable (boolean)
-```
-
-Component-level state uses React Hooks (useState, useReducer).
-
-## Directory Structure
-
-```
-coreui-free-react-admin-template/
-│
-├── public/                      # Static assets (served as-is)
-│   ├── favicon.ico
-│   └── robots.txt
-│
-├── src/                         # Source code
-│   │
-│   ├── assets/                  # Application assets
-│   │   ├── brand/              # Logo components (logo.js, sygnet.js)
-│   │   └── images/             # Image files (avatars, etc.)
-│   │
-│   ├── components/              # Reusable UI components
-│   │   ├── AppBreadcrumb.js    # Breadcrumb navigation
-│   │   ├── AppContent.js       # Main content area wrapper
-│   │   ├── AppFooter.js        # Footer component
-│   │   ├── AppHeader.js        # Header component
-│   │   ├── AppSidebar.js       # Sidebar navigation
-│   │   ├── AppSidebarNav.js    # Sidebar navigation renderer
-│   │   ├── DocsComponents.js   # Documentation component showcase
-│   │   ├── DocsExample.js      # Code example wrapper
-│   │   ├── DocsIcons.js        # Icon showcase
-│   │   ├── DocsLink.js         # Documentation link
-│   │   ├── header/             # Header sub-components
-│   │   │   └── AppHeaderDropdown.js  # User dropdown menu
-│   │   └── index.js            # Component barrel export
-│   │
-│   ├── layout/                  # Layout wrapper components
-│   │   └── DefaultLayout.js    # Main application layout
-│   │
-│   ├── views/                   # Page/view components
-│   │   ├── dashboard/          # Dashboard page
-│   │   │   └── Dashboard.js
-│   │   ├── base/               # Base UI component examples
-│   │   │   ├── accordion/
-│   │   │   ├── breadcrumbs/
-│   │   │   ├── cards/
-│   │   │   ├── carousels/
-│   │   │   ├── collapses/
-│   │   │   ├── list-groups/
-│   │   │   ├── navs/
-│   │   │   ├── paginations/
-│   │   │   ├── placeholders/
-│   │   │   ├── popovers/
-│   │   │   ├── progress/
-│   │   │   ├── spinners/
-│   │   │   ├── tables/
-│   │   │   ├── tabs/
-│   │   │   └── tooltips/
-│   │   ├── buttons/            # Button examples
-│   │   ├── charts/             # Chart examples
-│   │   ├── forms/              # Form examples
-│   │   ├── icons/              # Icon examples
-│   │   ├── notifications/      # Notification examples
-│   │   ├── widgets/            # Widget examples
-│   │   └── pages/              # Special pages
-│   │       ├── login/          # Login page
-│   │       ├── register/       # Registration page
-│   │       ├── page404/        # 404 error page
-│   │       └── page500/        # 500 error page
-│   │
-│   ├── scss/                    # Global stylesheets
-│   │   ├── style.scss          # Main stylesheet (imports CoreUI)
-│   │   ├── _custom.scss        # Custom style overrides
-│   │   ├── examples.scss       # Documentation example styles
-│   │   └── vendors/            # Third-party style overrides
-│   │
-│   ├── App.js                   # Root application component
-│   ├── index.js                 # Application entry point
-│   ├── routes.js                # Route definitions
-│   ├── _nav.js                  # Sidebar navigation configuration
-│   └── store.js                 # Redux store configuration
-│
-├── build/                       # Build utilities (optional)
-├── node_modules/                # Dependencies
-├── index.html                   # HTML entry point
-├── vite.config.mjs              # Vite build configuration
-├── eslint.config.mjs            # ESLint configuration
-├── package.json                 # Project metadata and dependencies
-├── .prettierrc.js               # Prettier configuration
-├── .browserslistrc              # Browser compatibility targets
-├── .editorconfig                # Editor configuration
-└── README.md                    # Project documentation
-```
-
-## Core Components
-
-### Application Component (App.js)
-
-The root component that:
-- Sets up HashRouter for client-side routing
-- Manages theme initialization and persistence
-- Provides Suspense boundaries for lazy-loaded routes
-- Defines top-level route structure
-
-**Key Features**:
-- Theme detection from URL parameters
-- Redux integration for theme state
-- Fallback spinner during component loading
-
-### Layout System
-
-#### DefaultLayout (layout/DefaultLayout.js)
-
-The main application layout wrapper that composes:
-- **AppSidebar**: Collapsible navigation sidebar
-- **AppHeader**: Top navigation bar with breadcrumbs and user menu
-- **AppContent**: Main content area with routing
-- **AppFooter**: Footer with version and links
-
-**Responsibility**: Provides consistent layout structure for authenticated views.
-
-#### Navigation Components
-
-**AppSidebar** (`components/AppSidebar.js`):
-- Renders collapsible sidebar
-- Integrates with Redux for show/hide state
-- Uses AppSidebarNav for menu rendering
-- Includes branding section
-
-**AppSidebarNav** (`components/AppSidebarNav.js`):
-- Recursive navigation renderer
-- Supports nested menu items
-- Renders CoreUI nav components (CNavItem, CNavGroup, CNavTitle)
-- Handles active state based on current route
-
-**AppHeader** (`components/AppHeader.js`):
-- Fixed top navigation bar
-- Sidebar toggle button
-- Breadcrumb navigation
-- User dropdown menu
-- Theme switcher
-
-### View Components
-
-View components are page-level components that:
-- Render specific application features (Dashboard, Forms, Charts)
-- Use CoreUI React components for UI
-- Connect to Redux when needed for global state
-- Implement business logic and data fetching
-
-**Example Structure**:
-```javascript
-const Dashboard = () => {
-  const [data, setData] = useState([])
-
-  useEffect(() => {
-    // Fetch dashboard data
-  }, [])
-
-  return (
-    <>
-      <WidgetsDropdown />
-      <CCard>
-        <CCardBody>
-          {/* Dashboard content */}
-        </CCardBody>
-      </CCard>
-    </>
-  )
-}
-```
-
-## Routing System
-
-### React Router DOM v7
-
-The application uses React Router DOM for declarative routing:
-
-**Configuration** (`App.js`):
-```javascript
-<HashRouter>
-  <Routes>
-    <Route path="/login" element={<Login />} />
-    <Route path="/register" element={<Register />} />
-    <Route path="/404" element={<Page404 />} />
-    <Route path="/500" element={<Page500 />} />
-    <Route path="*" element={<DefaultLayout />} />
-  </Routes>
-</HashRouter>
-```
-
-**Protected Routes** (`DefaultLayout.js` + `routes.js`):
-```javascript
-// routes.js - Route definitions
-const routes = [
-  { path: '/', exact: true, name: 'Home' },
-  { path: '/dashboard', name: 'Dashboard', element: Dashboard },
-  { path: '/base', name: 'Base', element: Cards, exact: true },
-  // ... more routes
-]
-
-// DefaultLayout.js - Route rendering
-<Suspense fallback={<CSpinner />}>
-  <Routes>
-    {routes.map((route, idx) => (
-      <Route
-        key={idx}
-        path={route.path}
-        exact={route.exact}
-        name={route.name}
-        element={<route.element />}
-      />
-    ))}
-  </Routes>
-</Suspense>
-```
-
-### Lazy Loading & Code Splitting
-
-All routes use React.lazy() for dynamic imports:
-
-```javascript
-const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
-const Login = React.lazy(() => import('./views/pages/login/Login'))
-```
-
-**Benefits**:
-- Smaller initial bundle size
-- Faster first page load
-- Components load only when navigated to
-- Automatic code splitting by Vite
-
-### Navigation Configuration
-
-Navigation structure defined in `_nav.js`:
-
-```javascript
-export default [
-  {
-    component: CNavItem,
-    name: 'Dashboard',
-    to: '/dashboard',
-    icon: <CIcon icon={cilSpeedometer} />,
-    badge: {
-      color: 'info',
-      text: 'NEW',
-    },
-  },
-  {
-    component: CNavGroup,
-    name: 'Base',
-    icon: <CIcon icon={cilPuzzle} />,
-    items: [
-      {
-        component: CNavItem,
-        name: 'Accordion',
-        to: '/base/accordion',
-      },
-      // ... nested items
-    ],
-  },
-]
-```
-
-## State Management
-
-### Redux Store Architecture
-
-**Store Configuration** (`store.js`):
-
-```javascript
-import { legacy_createStore as createStore } from 'redux'
-
-const initialState = {
-  sidebarShow: true,
-  sidebarUnfoldable: false,
-  theme: 'light',
-}
-
-const changeState = (state = initialState, { type, ...rest }) => {
-  switch (type) {
-    case 'set':
-      return { ...state, ...rest }
-    default:
-      return state
-  }
-}
-
-const store = createStore(changeState)
-export default store
-```
-
-### State Usage in Components
-
-**Reading State** (useSelector):
-```javascript
-import { useSelector } from 'react-redux'
-
-const MyComponent = () => {
-  const sidebarShow = useSelector((state) => state.sidebarShow)
-  const theme = useSelector((state) => state.theme)
-
-  return <div>Sidebar: {sidebarShow ? 'Visible' : 'Hidden'}</div>
-}
-```
-
-**Updating State** (useDispatch):
-```javascript
-import { useDispatch } from 'react-redux'
-
-const MyComponent = () => {
-  const dispatch = useDispatch()
-
-  const toggleSidebar = () => {
-    dispatch({ type: 'set', sidebarShow: false })
-  }
-
-  return <button onClick={toggleSidebar}>Hide Sidebar</button>
-}
-```
-
-### Theme Management
-
-CoreUI provides `useColorModes` hook for theme control:
-
-```javascript
-import { useColorModes } from '@coreui/react'
-
-const App = () => {
-  const { colorMode, setColorMode } = useColorModes('coreui-theme-key')
-
-  // Set theme: 'light', 'dark', or 'auto'
-  setColorMode('dark')
-
-  return <div>Current theme: {colorMode}</div>
-}
-```
-
-Theme persists in localStorage and syncs with Redux state.
-
-## Styling Architecture
-
-### Sass/SCSS Structure
-
-**Main Stylesheet** (`src/scss/style.scss`):
-```scss
-// Import CoreUI and Bootstrap
-@import '@coreui/coreui/scss/coreui';
-
-// Custom variables and overrides
-@import 'custom';
-```
-
-**Custom Overrides** (`src/scss/_custom.scss`):
-```scss
-// Override CoreUI/Bootstrap variables
-$primary: #321fdb;
-$secondary: #ced2d8;
-
-// Custom styles
-.my-custom-class {
-  // styles
-}
-```
-
-### CSS Custom Properties (CSS Variables)
-
-CoreUI uses CSS custom properties for theming:
-
-```css
-:root {
-  --cui-primary: #321fdb;
-  --cui-secondary: #ced2d8;
-  --cui-body-bg: #ebedef;
-  --cui-body-color: #4f5d73;
-}
-
-[data-coreui-theme="dark"] {
-  --cui-body-bg: #2b3035;
-  --cui-body-color: #b4bac0;
-}
-```
-
-**Usage in Components**:
-```javascript
-<div style={{ backgroundColor: 'var(--cui-primary)' }}>Content</div>
-```
-
-### Component Styling
-
-**Inline Styles**:
-```javascript
-<CCard style={{ marginBottom: '1rem' }}>
-```
-
-**Class Names** (with classnames utility):
-```javascript
-import classNames from 'classnames'
-
-const buttonClass = classNames({
-  'btn': true,
-  'btn-primary': isPrimary,
-  'btn-disabled': isDisabled,
-})
-
-<button className={buttonClass}>Click</button>
-```
-
-**Bootstrap Utilities**:
-```javascript
-<CCard className="mb-4 shadow-sm">
-  <CCardBody className="p-4 d-flex justify-content-between">
-```
-
-## Build System
-
-### Vite Configuration
-
-**File**: `vite.config.mjs`
-
-```javascript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'node:path'
-import autoprefixer from 'autoprefixer'
-
-export default defineConfig({
-  base: './',
-  build: {
-    outDir: 'build',
-  },
-  css: {
-    postcss: {
-      plugins: [autoprefixer()],
-    },
-  },
-  plugins: [react()],
-  resolve: {
-    alias: {
-      'src/': `${path.resolve(__dirname, 'src')}/`,
-    },
-  },
-  server: {
-    port: 3000,
-  },
-})
-```
-
-### Build Process
-
-**Development Build**:
-1. Vite starts dev server on port 3000
-2. ESBuild compiles JSX to JavaScript
-3. PostCSS processes Sass/SCSS with autoprefixer
-4. Hot Module Replacement (HMR) for instant updates
-
-**Production Build**:
-1. `vite build` command
-2. Code minification and tree-shaking
-3. Asset optimization (images, fonts)
-4. CSS extraction and minification
-5. Source maps generation
-6. Output to `build/` directory
-
-**Build Output**:
-```
-build/
-├── assets/
-│   ├── index-[hash].js      # Main bundle
-│   ├── [component]-[hash].js # Lazy-loaded chunks
-│   └── index-[hash].css     # Extracted CSS
-├── index.html               # HTML entry
-└── favicon.ico              # Static assets
-```
-
-### Code Splitting Strategy
-
-**Automatic Splitting**:
-- Each lazy-loaded route becomes a separate chunk
-- Vendor libraries (React, CoreUI) in separate vendor chunk
-- Dynamic imports create split points
-
-**Manual Splitting** (if needed):
-```javascript
-const HeavyComponent = React.lazy(() =>
-  import(/* webpackChunkName: "heavy" */ './HeavyComponent')
-)
-```
-
-## Performance Optimizations
-
-### Implemented Optimizations
-
-1. **Lazy Loading**: All routes lazy-loaded with React.lazy()
-2. **Code Splitting**: Separate bundles per route
-3. **Tree Shaking**: Unused code eliminated by Vite
-4. **Asset Optimization**: Images and fonts optimized
-5. **CSS Extraction**: Separate CSS bundle for caching
-6. **Hash-based Caching**: File names include content hash
-
-### Component Optimization
-
-**React.memo** for expensive renders:
-```javascript
-const ExpensiveComponent = React.memo(({ data }) => {
-  return <div>{/* Heavy rendering */}</div>
-})
-```
-
-**useMemo** for computed values:
-```javascript
-const sortedData = useMemo(() => {
-  return data.sort((a, b) => a.value - b.value)
-}, [data])
-```
-
-**useCallback** for stable function references:
-```javascript
-const handleClick = useCallback(() => {
-  console.log('Clicked')
-}, [])
-```
-
-### Bundle Size Management
-
-**Strategies**:
-- Use named imports: `import { CButton } from '@coreui/react'`
-- Avoid importing entire libraries
-- Check bundle size with `npm run build`
-- Use Vite's rollup visualizer for analysis
-
-## Browser Support
-
-### Target Browsers
-
-Defined in `.browserslistrc`:
-```
-> 0.5%
-last 2 versions
-Firefox ESR
-not dead
-not IE 11
-```
-
-### Polyfills
-
-`core-js` provides polyfills for:
-- ES6+ features
-- Promise, Array methods
-- Object methods
-- Modern JavaScript APIs
-
-### Progressive Enhancement
-
-- Modern features with fallbacks
-- CSS Grid with flexbox fallback
-- Modern color modes with theme classes
-
-## Security Considerations
-
-### Best Practices
-
-1. **Content Security Policy**: Configure CSP headers
-2. **XSS Prevention**: React escapes content by default
-3. **Dependency Auditing**: Run `npm audit` regularly
-4. **Environment Variables**: Use `.env` files (not committed)
-5. **HTTPS**: Serve over HTTPS in production
-
-### React Security
-
-- Avoid `dangerouslySetInnerHTML` unless necessary
-- Validate user input before rendering
-- Use PropTypes for type safety
-- Keep dependencies updated
-
-## Deployment
-
-### Static Hosting
-
-The application builds to static files suitable for:
-- Netlify
-- Vercel
-- GitHub Pages
-- AWS S3 + CloudFront
-- Any static file server
-
-### Build for Production
-
-```bash
-npm run build
-```
-
-Output in `build/` directory ready for deployment.
-
-### HashRouter for Static Hosts
-
-Uses HashRouter for GitHub Pages compatibility:
-- URLs: `https://example.com/#/dashboard`
-- No server-side routing configuration needed
-- Works with any static host
+Este documento proporciona una visión general y detallada de la arquitectura, patrones de diseño e implementación técnica del panel de administración (Frontend) de **La Casona**.
 
 ---
 
-This architecture provides a solid foundation for building modern, performant admin dashboards with React and CoreUI. The modular structure allows for easy extension and customization while maintaining code quality and best practices.
+## Índice
+
+- [Resumen del Proyecto](#resumen-del-proyecto)
+- [Stack Tecnológico](#stack-tecnológico)
+- [Patrón Arquitectónico](#patrón-arquitectónico)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Sistema de Ruteo](#sistema-de-ruteo)
+- [Manejo de Estado (State Management)](#manejo-de-estado-state-management)
+- [Estilos y Temas](#estilos-y-temas)
+- [Compilación y Construcción](#compilación-y-construcción)
+
+---
+
+## Resumen del Proyecto
+
+El Frontend de **La Casona** es una aplicación SPA (Single Page Application) moderna diseñada para centralizar la gestión de eventos, CRM de clientes, control de inventario de cocina y bar, ventas y recursos humanos.
+
+El proyecto fue completamente migrado de una plantilla pesada heredada (CoreUI + Bootstrap + Redux) hacia una base moderna construida desde cero con **React 19, Vite, Tailwind CSS v4 y componentes Shadcn UI**, logrando un diseño extremadamente premium, modular, ligero y de alto rendimiento.
+
+---
+
+## Stack Tecnológico
+
+### Núcleo Frontend
+
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **React** | 19.2.3 | Biblioteca UI basada en componentes funcionales y Hooks. |
+| **Vite** | 8.0.14 | Empaquetador y servidor de desarrollo ultrarrápido con HMR. |
+| **React Router DOM** | 7.15.1 | Ruteo declarativo del lado del cliente. |
+
+### Interfaz de Usuario (UI) y Diseño
+
+| Librería | Propósito |
+|----------|-----------|
+| **Tailwind CSS v4** | Framework CSS utilitario y moderno. |
+| **Radix UI** | Primitivas accesibles y sin estilos para el núcleo de los componentes. |
+| **Shadcn UI** | Sistema de diseño de componentes listos para usar y altamente personalizables. |
+| **Lucide React** | Librería de iconos vectoriales modernos y ligeros. |
+| **Next Themes** | Proveedor de temas (Claro / Oscuro) con soporte de persistencia local. |
+
+### Formularios y Validación
+
+| Librería | Propósito |
+|----------|-----------|
+| **React Hook Form** | Manejo optimizado y de alto rendimiento de formularios. |
+| **Zod** | Validación robusta de esquemas de datos. |
+
+---
+
+## Patrón Arquitectónico
+
+La aplicación sigue una **arquitectura basada en componentes funcionales** y división de responsabilidades (*Separation of Concerns*):
+
+```
+┌──────────────────────────────────────────────┐
+│            Entrypoint (main.jsx)             │
+│  - Inicializa Proveedor de Temas            │
+│  - Inicializa Proveedor de Autenticación    │
+│  - Renderiza AppRouter                       │
+└──────────────────────────────────────────────┘
+                        │
+                        ▼
+┌──────────────────────────────────────────────┐
+│           Ruteador (AppRouter.jsx)           │
+│  - Enrutamiento principal (BrowserRouter)    │
+│  - Rutas Públicas (Login, Forgot, Reset)     │
+│  - Rutas Protegidas (Home/Dashboard, Perfil) │
+└──────────────────────────────────────────────┘
+                        │
+                        ▼
+┌──────────────────────────────────────────────┐
+│               Layout (Home.jsx)              │
+│  - Sidebar de Navegación Lateral             │
+│  - Barra superior de Usuario (Header)        │
+│  - Renderizado dinámico de Vistas de negocio │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## Estructura del Proyecto
+
+El código está organizado para promover la modularidad y reutilización:
+
+```
+Frontend Casona/
+├── components/                  # Componentes reutilizables de UI y Negocio
+│   ├── auth/                    # Vistas y componentes del flujo de Auth
+│   │   ├── Login.jsx            # Pantalla de inicio de sesión
+│   │   ├── ForgotPassword.jsx   # Formulario de recuperación de clave
+│   │   ├── Profile.jsx          # Panel de perfil de usuario
+│   │   └── ProtectedRoute.jsx   # Guarda de ruta basada en sesión activa
+│   ├── ui/                      # Componentes base de diseño (Shadcn UI)
+│   │   ├── button.jsx, input.jsx, dialog.jsx, card.jsx, etc.
+│   │   └── use-toast.js         # API para lanzar notificaciones toast
+│   ├── views/                   # Vistas principales de negocio (Módulos)
+│   │   ├── dashboard-view.jsx   # Dashboard ejecutivo
+│   │   ├── crm-view.jsx         # Gestión de clientes
+│   │   ├── events-view.jsx      # Gestión de eventos y salones
+│   │   ├── inventory-view.jsx   # Control de almacén
+│   │   ├── hr-view.jsx          # Gestión de personal / RRHH
+│   │   └── ...                  # Ventas y Proveedores
+│   ├── sidebar.jsx              # Menú lateral interactivo
+│   ├── theme-provider.jsx       # Wrapper para el color del tema
+│   └── theme-toggle.jsx         # Botón para cambiar Modo Claro/Oscuro
+│
+├── context/                     # Estados globales compartidos
+│   └── AuthContext.jsx          # Contexto de autenticación del usuario
+│
+├── lib/                         # Clientes y utilidades
+│   ├── api-client.js            # Cliente HTTP centralizado (fetch wrapper)
+│   ├── utils.js                 # Utilidades (cn para combinar clases de CSS)
+│   └── services/                # Servicios específicos de consumo de endpoints
+│       ├── auth.service.js      # Peticiones de login, perfil y contraseña
+│       ├── client.service.js    # CRUD de clientes
+│       ├── event.service.js     # CRUD de eventos
+│       └── ...                  # Inventario, personal y ventas
+│
+├── public/                      # Recursos estáticos (logos, favicons, etc.)
+├── src/                         # Archivos base de la aplicación React
+│   ├── AppRouter.jsx            # Enrutamiento de la aplicación
+│   ├── main.jsx                 # Punto de entrada de React
+│   └── globals.css              # Estilos globales y variables de Tailwind
+│
+├── .editorconfig                # Consistencia de formato en editores de código
+├── .env.local                   # Variables de entorno locales (URL de API)
+├── .gitignore                   # Archivos excluidos del control de versiones
+├── .prettierrc.js               # Configuración de formateo automático de Prettier
+├── components.json              # Configuración e integración de Shadcn UI
+├── eslint.config.mjs            # Reglas de análisis de calidad y linter de ESLint
+├── index.html                   # Plantilla HTML raíz para el montaje de React
+├── package.json                 # Dependencias del proyecto y scripts de ejecución
+├── postcss.config.mjs           # Procesamiento de Tailwind para compatibilidad CSS
+└── vite.config.js               # Configuración del servidor y empaquetador Vite
+```
+
+### Archivos de Configuración (Raíz)
+
+Para la defensa del proyecto, es importante comprender la función de los archivos de configuración ubicados en la raíz:
+
+*   **`package.json`**: Contiene la configuración administrativa del proyecto, los scripts ejecutables (`npm run dev`, `npm run build`) y el listado de dependencias requeridas (React, Shadcn UI, Tailwind, etc.).
+*   **`package-lock.json`**: Registra las versiones exactas instaladas de cada dependencia y sus subdependencias, garantizando la consistencia del entorno de ejecución al reinstalar en cualquier equipo.
+*   **`vite.config.js`**: Controla el funcionamiento de Vite. Configura el servidor de desarrollo en el puerto 3001, inyecta el soporte de React y define el alias `@` para facilitar las importaciones relativas desde la raíz.
+*   **`index.html`**: Es el archivo HTML principal de la Single Page Application (SPA). Contiene el nodo contenedor `<div id="root">` donde React monta toda la aplicación.
+*   **`components.json`**: Guarda las preferencias del CLI de Shadcn UI, tales como los alias de importación, el color base, la configuración de variables CSS y el framework de estilos asociados.
+*   **`postcss.config.mjs`**: Configura PostCSS, necesario para que Tailwind CSS compile sus clases utilitarias de manera óptima y compatible con navegadores antiguos y modernos.
+*   **`.env.local`**: Almacena las variables de entorno de uso local (como `VITE_API_URL`), evitando hardcodear URLs en el código fuente de los servicios.
+*   **`.gitignore`**: Le indica a Git qué archivos no se deben subir al repositorio de código (como `node_modules` o archivos `.env` con credenciales de desarrollo).
+*   **`eslint.config.mjs`**: Reglas de ESLint para asegurar la calidad de código JavaScript, previniendo errores de sintaxis o malas prácticas.
+*   **`.prettierrc.js` y `.prettierignore`**: Configuración de Prettier para formatear automáticamente el código con criterios estandarizados (comillas simples, eliminación de puntos y comas opcionales, etc.).
+*   **`.editorconfig`**: Asegura que diferentes editores de código mantengan la misma indentación (2 espacios) y saltos de línea al editar.
+
+
+---
+
+## Sistema de Ruteo
+
+### React Router DOM v7
+
+El enrutamiento principal utiliza el navegador (`BrowserRouter`) del lado del cliente.
+Se divide en dos categorías lógicas:
+
+1. **Rutas Públicas**:
+   * `/login`: Acceso al sistema.
+   * `/forgot-password`: Petición de enlace de recuperación.
+   * `/reset-password`: Restablecimiento de contraseña nueva.
+2. **Rutas Protegidas**:
+   * `/`: Pantalla principal del Dashboard.
+   * `/profile`: Visualización y actualización del perfil del usuario.
+
+Las rutas protegidas se envuelven en el componente `<ProtectedRoute>`, el cual verifica si existe una sesión activa y un token JWT válido. Si no lo hay, redirige inmediatamente a `/login`.
+
+---
+
+## Manejo de Estado (State Management)
+
+### React Context API
+
+Para mantener la aplicación ligera y rápida, se eliminó por completo Redux. En su lugar, el estado global se administra mediante la API nativa de React:
+
+*   **`AuthContext.jsx`**: Centraliza los datos del usuario logueado (`user`), el token JWT (`token`), y el estado general (`isAuthenticated`). Expone los métodos `login`, `logout` y la función para actualizar datos del perfil, persistiendo el token automáticamente en el `localStorage` del navegador para mantener la sesión activa entre recargas de página.
+*   **Estado Local (`useState`)**: Para vistas dinámicas e interacciones internas del usuario (como cambiar la pestaña activa del sidebar o desplegar modales).
+
+---
+
+## Estilos y Temas
+
+### Tailwind CSS v4
+
+La aplicación se apoya en **Tailwind CSS v4**, configurado en `src/globals.css`. Esta versión moderna permite un procesamiento más rápido mediante variables de CSS nativas:
+
+*   **Paleta de colores**: Diseñada con colores neutros y acentos que brindan una interfaz limpia estilo Glassmorphism y Dark Mode.
+*   **Temas Claro / Oscuro**: Gestionado de manera nativa por `next-themes` y el componente `ThemeToggle`, aplicando la clase `dark` al elemento `<html>`.
+
+---
+
+## Compilación y Construcción
+
+Vite gestiona el ciclo de desarrollo y producción:
+
+*   **Desarrollo**: `npm run dev` levanta un servidor local en el puerto **3001** con recarga en caliente instantánea (HMR).
+*   **Producción**: `npm run build` realiza un análisis estático de código, remueve dependencias no usadas (*tree-shaking*), optimiza los assets y empaqueta el frontend en archivos HTML/JS/CSS estáticos optimizados en el directorio `dist/`.
+
+---
+
+## Justificación de la Estructura (Arquitectura y Diseño)
+
+La estructuración del directorio raíz y las carpetas internas responde a patrones de diseño de software consagrados, enfocados en la **mantenibilidad, escalabilidad y la separación de responsabilidades (Separation of Concerns)**:
+
+### 1. Separación de Responsabilidades
+*   **Presentación Visual (`components/ui`)**: Son componentes puros de diseño (botones, inputs, diálogos, tablas). No saben nada de lógica de negocios ni de peticiones HTTP. Solo reciben props y renderizan UI.
+*   **Vistas de Negocio (`components/views`)**: Son los paneles principales de cada módulo de la empresa. Orquestan la interacción del usuario y consumen los servicios para obtener y enviar datos.
+*   **Control del Estado de Sesión (`context/`)**: Centraliza los estados globales transversales (si el usuario está logueado o no) para evitar el acoplamiento directo entre componentes distantes.
+*   **Capa de Datos e HTTP (`lib/` y `lib/services/`)**: Centraliza el comportamiento de la red, endpoints y llamadas al backend.
+
+### 2. Desacoplamiento de la Interfaz
+Con esta estructura, si el backend cambia un endpoint, una ruta de API o el formato en que envía los datos de un cliente, **solo** se modifica el archivo correspondiente en `lib/services/client.service.js`. Las pantallas visuales no se enteran de este cambio técnico, ya que solo llaman a `clientService.getAll()` y reciben el arreglo de datos listo para renderizar.
+
+---
+
+## Arquitectura de Conexión a la API y Uso de Fetch
+
+Para la comunicación de datos con el Backend, el sistema implementa un **Patrón de Servicio Centralizado** apoyado en el API nativo `fetch` de JavaScript.
+
+### ¿Cómo funciona el flujo de datos?
+
+El flujo sigue un camino de tres capas para evitar la redundancia y asegurar la modularidad:
+
+```
+Componente Visual (UI) ──► Servicio (Service) ──► Cliente Centralizado (apiClient) ──► Fetch API ──► Backend
+```
+
+1.  **Componente UI (Ej: `events-view.jsx`)**: El componente visual no conoce URLs ni tokens de seguridad. Solo llama a una función asíncrona limpia:
+    ```javascript
+    const datos = await eventService.getAll();
+    ```
+2.  **Servicio (`lib/services/event.service.js`)**: El servicio encapsula las operaciones específicas del módulo. Conoce el endpoint exacto del servidor backend, pero delega la petición HTTP real al cliente de API común:
+    ```javascript
+    export const eventService = {
+      getAll: () => apiClient.get("/events")
+    };
+    ```
+3.  **Cliente Centralizado (`lib/api-client.js`)**: Es la pieza clave de red. Es un envoltorio (*wrapper*) construido sobre la función nativa `fetch` de JavaScript. Resuelve los siguientes aspectos de manera automática:
+    *   **Inyección de la URL Base**: Lee `VITE_API_URL` del entorno para no repetir la dirección del servidor en cada petición.
+    *   **Manejo de Seguridad (Token JWT)**: Intercepta cada solicitud de salida y le adjunta de manera automática la cabecera:
+        ```http
+        Authorization: Bearer <TOKEN_DE_SESION>
+        ```
+        obteniendo el token directamente de `localStorage`.
+    *   **Configuración Común**: Configura de forma transparente las cabeceras `Content-Type: application/json` y procesa las respuestas del servidor convirtiéndolas de JSON a objetos legibles o capturando y formateando errores HTTP (como 401 No Autorizado, 400 Petición Inválida, 500 Error de Servidor) de manera uniforme para mostrárselos al usuario final mediante alertas visuales (Toasts).
+
