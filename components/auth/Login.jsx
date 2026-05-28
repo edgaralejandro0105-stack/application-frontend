@@ -55,8 +55,8 @@ export function Login() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "javierpinto10122005@gmail.com",
-      password: "admin123"
+      email: "",
+      password: ""
     }
   });
 
@@ -153,7 +153,7 @@ export function Login() {
           )}
 
           {/* Formulario conectado a handleSubmit de react-hook-form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
 
             {/* Campo: Correo Electrónico */}
             <div className="space-y-2">
@@ -163,7 +163,7 @@ export function Login() {
               <input
                 id="email"
                 type="email"
-                autoComplete="email"
+                autoComplete="off"
                 placeholder="nombre@ejemplo.com"
                 /* Si hay error en 'email', cambiamos el borde a rojo, de lo contrario usamos el normal */
                 className={`flex h-12 w-full rounded-xl border bg-transparent px-4 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 ${errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-input"
@@ -196,7 +196,7 @@ export function Login() {
                   id="password"
                   /* Alternamos dinámicamente entre 'text' y 'password' */
                   type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   /* pr-12 para dejar espacio al ícono del ojo a la derecha */
                   className={`flex h-12 w-full rounded-xl border bg-transparent px-4 py-2 pr-12 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-input"
