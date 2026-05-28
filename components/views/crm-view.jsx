@@ -13,9 +13,12 @@ import {
   Trash2,
   Calendar,
   Clock,
+  Download,
+  Loader2,
   AlertTriangle,
   Award
 } from "lucide-react";
+import { reportService } from "@/lib/services/report.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +47,7 @@ export function CRMView() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [isExporting, setIsExporting] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,6 +79,15 @@ export function CRMView() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      await reportService.downloadClientsPDF();
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Cargar eventos cuando se selecciona un cliente
   useEffect(() => {
@@ -360,6 +373,19 @@ export function CRMView() {
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
+            <Button
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              variant="outline"
+              className="h-9 rounded-lg gap-2 border-border hover:bg-muted"
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isExporting ? "Generando..." : "Generar PDF"}
+            </Button>
             <Button
               onClick={() => setModalOpen(true)}
               className="h-9 rounded-lg bg-[#c05c3c] px-4 text-sm text-white shadow-md hover:bg-[#a84d32] transition-all hover:-translate-y-0.5"

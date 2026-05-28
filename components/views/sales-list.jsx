@@ -9,12 +9,14 @@ import {
   Calendar,
   X,
   TrendingUp,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saleService } from "@/lib/services/sale.service";
+import { reportService } from "@/lib/services/report.service";
 import { extractList } from "@/lib/api-client";
 import {
   LineChart,
@@ -33,6 +35,7 @@ export function SalesList({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -85,6 +88,15 @@ export function SalesList({ onNavigate }) {
     return sales.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0);
   }, [sales]);
 
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      await reportService.downloadSalesPDF();
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
@@ -100,11 +112,12 @@ export function SalesList({ onNavigate }) {
         <div className="flex gap-3">
           <Button
             variant="outline"
-            className="rounded-xl border-border hover:bg-muted/50 transition-all"
-            onClick={() => window.print()}
+            className="rounded-xl border-border hover:bg-muted/50 transition-all gap-2"
+            onClick={handleExportPDF}
+            disabled={isExporting}
           >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
+            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {isExporting ? "Generando..." : "Generar PDF"}
           </Button>
           <Button
             onClick={() => onNavigate("create-sale")}

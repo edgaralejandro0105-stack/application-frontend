@@ -2,8 +2,9 @@
 import { useState, useEffect } from "react";
 import { 
   Search, Plus, Edit, Trash2, MapPin, Phone, Mail, 
-  User, CheckCircle2, XCircle, Truck 
+  User, CheckCircle2, XCircle, Truck, Download, Loader2 
 } from "lucide-react";
+import { reportService } from "@/lib/services/report.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ export function ProvidersView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -43,6 +45,15 @@ export function ProvidersView() {
       console.error("Failed to load providers:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      await reportService.downloadProvidersPDF();
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -129,7 +140,7 @@ export function ProvidersView() {
       {/* Header Panel */}
       <Card className="glass-panel rounded-3xl">
         <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
                 <Truck className="h-6 w-6 text-primary" />
@@ -140,17 +151,21 @@ export function ProvidersView() {
               </p>
             </div>
             
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-64">
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:w-auto">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Buscar proveedor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 rounded-xl bg-background/50 border-white/10 focus:ring-primary"
+                  className="h-9 w-full sm:w-[200px] rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
                 />
               </div>
-              <Button onClick={openAddModal} className="rounded-xl shadow-md gap-2 whitespace-nowrap">
+              <Button onClick={handleExportPDF} disabled={isExporting} variant="outline" className="h-9 rounded-lg gap-2 border-border hover:bg-muted">
+                {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {isExporting ? "Generando..." : "Generar PDF"}
+              </Button>
+              <Button onClick={openAddModal} className="h-9 rounded-lg bg-[#c05c3c] px-4 text-sm text-white shadow-md hover:bg-[#a84d32] transition-all hover:-translate-y-0.5 gap-2 whitespace-nowrap">
                 <Plus className="h-4 w-4" />
                 Nuevo Proveedor
               </Button>
@@ -168,7 +183,7 @@ export function ProvidersView() {
         <Card className="glass-panel border-dashed p-10 text-center">
           <Truck className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
           <p className="text-muted-foreground font-medium text-lg">No se encontraron proveedores.</p>
-          <Button variant="outline" className="mt-4 rounded-xl" onClick={openAddModal}>Registrar el primero</Button>
+          <Button className="mt-4 rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all hover:-translate-y-0.5" onClick={openAddModal}>Registrar el primero</Button>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -332,7 +347,7 @@ export function ProvidersView() {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-6 border-t border-white/10 mt-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -341,7 +356,7 @@ export function ProvidersView() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" className="flex-1 rounded-xl">
+                <Button type="submit" className="flex-1 rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all hover:-translate-y-0.5">
                   {isEditing ? "Guardar Cambios" : "Crear Proveedor"}
                 </Button>
               </div>

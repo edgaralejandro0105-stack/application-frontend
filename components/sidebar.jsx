@@ -10,7 +10,6 @@ import {
   Settings,
   Menu,
   X,
-  LogOut,
   Receipt,
   Truck
 } from "lucide-react";
@@ -28,19 +27,8 @@ const navItems = [
 ];
 export function Sidebar({ activeSection, onSectionChange }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Error al cerrar sesi\xF3n:", error);
-    } finally {
-      navigate("/login");
-    }
-  };
   return <>
       {
     /* 
@@ -179,33 +167,6 @@ export function Sidebar({ activeSection, onSectionChange }) {
             </p>
             <p className="text-xs text-sidebar-foreground/40">Version 1.0.0</p>
           </div>
-          
-          {
-    /* 
-      BOTÓN DE LOGOUT
-      
-      FUNCIONALIDADES:
-      - onClick: Ejecuta handleLogout()
-      - disabled: Se deshabilita mientras se procesa el logout
-      - Muestra texto dinámico: "Cerrar sesión" o "Cerrando..."
-      - Icono de logout (puerta abierta)
-      
-      ESTILOS:
-      - bg-red-600/10: Fondo rojo suave
-      - text-red-600: Texto rojo
-      - hover:bg-red-600/20: Fondo más rojo al pasar mouse
-      - disabled:cursor-not-allowed: Cursor bloqueado cuando está deshabilitado
-      - disabled:opacity-60: Hace que se vea deshabilitado (más transparente)
-    */
-  }
-          <button
-    onClick={handleLogout}
-    disabled={loggingOut}
-    className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-all duration-200 bg-red-600/10 text-red-600 hover:bg-red-600/20 disabled:cursor-not-allowed disabled:opacity-60"
-  >
-            <LogOut className="h-5 w-5" />
-            {loggingOut ? "Cerrando..." : "Cerrar sesi\xF3n"}
-          </button>
         </div>
       </aside>
     </>;
