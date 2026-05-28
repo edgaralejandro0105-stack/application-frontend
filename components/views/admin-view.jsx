@@ -117,6 +117,9 @@ const statusColors = {
 export function AdminView() {
   const [activeTab, setActiveTab] = useState("users");
   const [userModalOpen, setUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userForm, setUserForm] = useState({ name: "", email: "", password: "", role_id: 1 });
+  const [isSavingUser, setIsSavingUser] = useState(false);
   const [venueModalOpen, setVenueModalOpen] = useState(false);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
 
@@ -143,6 +146,50 @@ export function AdminView() {
       loadUsers();
     }
   }, [activeTab]);
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setUserForm({
+      name: user.name || "",
+      email: user.email || "",
+      password: "", // Leave blank for edit unless they want to change it
+      role_id: user.role_id || 1,
+    });
+    setUserModalOpen(true);
+  };
+
+  const handleCreateNewUser = () => {
+    setEditingUser(null);
+    setUserForm({ name: "", email: "", password: "", role_id: 1 });
+    setUserModalOpen(true);
+  };
+
+  const handleSaveUser = async () => {
+    setIsSavingUser(true);
+    try {
+      let res;
+      if (editingUser) {
+        const payload = { ...userForm };
+        if (!payload.password) delete payload.password; // Don't send empty password
+        res = await apiClient.put(`/users/${editingUser.user_id}`, payload);
+      } else {
+        res = await apiClient.post(`/auth/register`, userForm);
+      }
+
+      if (res && res.error) {
+        alert(`Error: ${res.error}`);
+        return;
+      }
+      
+      setUserModalOpen(false);
+      loadUsers();
+    } catch (err) {
+      alert("Error al guardar el usuario");
+      console.error(err);
+    } finally {
+      setIsSavingUser(false);
+    }
+  };
 
   const handleDeleteUser = async (id) => {
     if (window.confirm("¿Estás seguro de que deseas eliminar este usuario?")) {
@@ -209,7 +256,7 @@ export function AdminView() {
               />
             </div>
             <Button
-              onClick={() => setUserModalOpen(true)}
+              onClick={handleCreateNewUser}
               className="h-9 rounded-lg bg-[#c05c3c] text-white shadow-md hover:bg-[#a84d32] px-4 text-sm"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -274,7 +321,7 @@ export function AdminView() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <Shield className="h-4 w-4 text-[#6b705c]" />
-                            <span className="text-sm text-foreground">{user.Role?.name || "Administrador"}</span>
+                            <span className="text-sm text-foreground">{user.Role?.role_name || user.Role?.name || "Administrador"}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -290,10 +337,11 @@ export function AdminView() {
                         <td className="px-6 py-4">
                           <div className="flex gap-2">
                             <Button
-    variant="outline"
-    size="sm"
-    className="rounded-lg border-border hover:bg-muted/50"
-  >
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditUser(user)}
+                              className="rounded-lg border-border hover:bg-muted/50"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button
@@ -506,12 +554,12 @@ export function AdminView() {
           <Card className="w-full max-w-md rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
             <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
               <CardTitle className="text-xl font-semibold text-foreground">
-                Nuevo Usuario
+                {editingUser ? "Editar Usuario" : "Nuevo Usuario"}
               </CardTitle>
               <button
-    onClick={() => setUserModalOpen(false)}
-    className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-  >
+                onClick={() => setUserModalOpen(false)}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              >
                 <X className="h-5 w-5" />
               </button>
             </CardHeader>
@@ -519,51 +567,65 @@ export function AdminView() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground">Nombre</Label>
                 <Input
-    placeholder="Nombre completo"
-    className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
-  />
+                  value={userForm.name}
+                  onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                  placeholder="Nombre completo"
+                  className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground">Correo electrónico</Label>
                 <Input
-    type="email"
-    placeholder="correo@ejemplo.com"
-    className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
-  />
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  placeholder="correo@ejemplo.com"
+                  className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Contraseña</Label>
+                <Label className="text-sm font-medium text-foreground">Contraseña {editingUser && "(Dejar en blanco para mantener actual)"}</Label>
                 <Input
-    type="password"
-    placeholder="********"
-    className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
-  />
+                  type="password"
+                  value={userForm.password}
+                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                  placeholder="********"
+                  className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground">Rol</Label>
                 <div className="relative">
-                  <select className="w-full appearance-none rounded-xl border border-input bg-background px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]">
-                    <option value="">Seleccionar rol...</option>
-                    {roles.map((role) => <option key={role} value={role}>
-                        {role}
-                      </option>)}
+                  <select 
+                    value={userForm.role_id}
+                    onChange={(e) => setUserForm({ ...userForm, role_id: parseInt(e.target.value) })}
+                    className="w-full appearance-none rounded-xl border border-input bg-background px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                  >
+                    <option value={1}>Administrador</option>
+                    <option value={4}>Gerente</option>
+                    <option value={2}>Bartender</option>
+                    <option value={3}>Mesero</option>
+                    <option value={6}>Cajero</option>
+                    <option value={5}>Seguridad</option>
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button
-    variant="outline"
-    onClick={() => setUserModalOpen(false)}
-    className="rounded-xl border-border"
-  >
+                  variant="outline"
+                  onClick={() => setUserModalOpen(false)}
+                  disabled={isSavingUser}
+                  className="rounded-xl border-border"
+                >
                   Cancelar
                 </Button>
                 <Button
-    onClick={() => setUserModalOpen(false)}
-    className="rounded-xl bg-[#c05c3c] text-white hover:bg-[#a84d32]"
-  >
-                  Crear Usuario
+                  onClick={handleSaveUser}
+                  disabled={isSavingUser}
+                  className="rounded-xl bg-[#c05c3c] text-white hover:bg-[#a84d32]"
+                >
+                  {isSavingUser ? "Guardando..." : (editingUser ? "Actualizar Usuario" : "Crear Usuario")}
                 </Button>
               </div>
             </CardContent>

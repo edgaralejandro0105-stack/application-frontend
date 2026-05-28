@@ -14,7 +14,9 @@ import {
   History,
   RefreshCw,
   Edit2,
-  Trash2
+  Trash2,
+  Download,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { productService } from "@/lib/services/product.service";
 import { inventorybarService } from "@/lib/services/inventorybar.service";
+import { reportService } from "@/lib/services/report.service";
 const categoryIcons = {
   Beverages: Wine,
   Catering: UtensilsCrossed,
@@ -51,6 +54,7 @@ export function InventoryView() {
   const [productName, setProductName] = useState("");
   const [productCategory, setProductCategory] = useState("Bar");
   const [productUnit, setProductUnit] = useState("Botella");
+  const [isExporting, setIsExporting] = useState(false);
   const [productExpiry, setProductExpiry] = useState("");
   const [productStock, setProductStock] = useState(0);
   const [productMinStock, setProductMinStock] = useState(0);
@@ -213,6 +217,16 @@ export function InventoryView() {
       alert(`Network error: ${err.message}`);
     }
   };
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      await reportService.downloadInventoryPDF();
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const lowStockProducts = products.filter((p) => (p.current_stock ?? 0) < (p.min_stock ?? 0));
   if (loading && products.length === 0) {
     return <div className="flex items-center justify-center min-h-[400px]">
@@ -253,13 +267,24 @@ export function InventoryView() {
             Controla productos, existencias y movimientos.
           </p>
         </div>
-        <Button
-    onClick={openAddProductModal}
-    className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
-  >
-          <Plus className="mr-2 h-4 w-4" />
-          Agregar Producto
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            variant="outline"
+            className="rounded-xl border-border hover:bg-muted gap-2"
+          >
+            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {isExporting ? "Generando..." : "Generar PDF"}
+          </Button>
+          <Button
+            onClick={openAddProductModal}
+            className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Agregar Producto
+          </Button>
+        </div>
       </div>
 
       {

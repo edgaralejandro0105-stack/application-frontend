@@ -15,13 +15,16 @@ import {
   ArrowLeft,
   Edit,
   Save,
-  Trash2
+  Trash2,
+  Download,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { employeeService } from "@/lib/services/employee.service";
+import { reportService } from "@/lib/services/report.service";
 import { extractList } from "@/lib/api-client";
 
 const departments = ["Todos", "Coordinador", "Chef", "Bar", "Diseño", "Ventas", "Operaciones"];
@@ -44,6 +47,7 @@ export function HRView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("Todos");
+  const [isExporting, setIsExporting] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -130,6 +134,15 @@ export function HRView() {
       status: employee.status || "active"
     });
     setIsEditing(false);
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      await reportService.downloadEmployeesPDF();
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const filteredEmployees = employees.filter((employee) => {
@@ -351,6 +364,15 @@ export function HRView() {
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
+            <Button
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              variant="outline"
+              className="h-9 rounded-lg gap-2 border-border hover:bg-muted"
+            >
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {isExporting ? "Generando..." : "Generar PDF"}
+            </Button>
             <Button
               onClick={() => setModalOpen(true)}
               className="h-9 rounded-lg bg-[#c05c3c] px-4 text-sm text-white shadow-md hover:bg-[#a84d32]"
