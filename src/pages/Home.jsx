@@ -13,6 +13,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { Profile } from "@/components/auth/Profile"
 import { useAuth } from "@/context/AuthContext"
 import { ThemeToggle } from "@/components/theme-toggle"
+// trigger HMR
+import { NotificationBell } from "@/components/NotificationBell"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { User, LogOut } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -65,6 +67,7 @@ export default function Home() {
         <main className="flex min-h-screen flex-col lg:pl-72">
           {/* HEADER / TOPBAR */}
           <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-2 border-b border-border/40 bg-background/40 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+            <NotificationBell onNavigate={setActiveSection} />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
