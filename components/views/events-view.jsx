@@ -28,6 +28,8 @@ import { Label } from "@/components/ui/label";
 import { eventService } from "@/lib/services/event.service";
 import { clientService } from "@/lib/services/client.service";
 import { venueService } from "@/lib/services/venue.service";
+import { employeeService } from "@/lib/services/employee.service";
+import { serviceExternalService } from "@/lib/services/serviceExternal.service";
 import { extractList } from "@/lib/api-client";
 import { toast } from "sonner";
 
@@ -57,23 +59,7 @@ const monthNames = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
 ];
 
-// MOCK DATA RESTAURADA PARA LA UI COMPLETA
-const mockServices = [
-  { id: 1, name: "Servicio de Catering", price: 45, unit: "por persona" },
-  { id: 2, name: "DJ y Sistema de Sonido", price: 800, unit: "por evento" },
-  { id: 3, name: "Arreglos Florales", price: 350, unit: "por evento" },
-  { id: 4, name: "Fotografía", price: 1200, unit: "por evento" },
-  { id: 5, name: "Iluminación", price: 500, unit: "por evento" },
-  { id: 6, name: "Servicio de Bar", price: 25, unit: "por persona" }
-];
-
-const mockStaff = [
-  { id: 1, name: "Ana Lopez", role: "Coordinadora" },
-  { id: 2, name: "Miguel Santos", role: "Chef Principal" },
-  { id: 3, name: "Laura Fernandez", role: "Bar Manager" },
-  { id: 4, name: "David Ruiz", role: "Decorador" },
-  { id: 5, name: "Carmen Vega", role: "Ventas" }
-];
+// Mock data removed (services and staff are now loaded dynamically)
 
 // Zod Schema ajustado
 const eventSchema = z.object({
@@ -93,6 +79,8 @@ export function EventsView() {
   const [events, setEvents] = useState([]);
   const [clients, setClients] = useState([]);
   const [venues, setVenues] = useState([]);
+  const [servicesList, setServicesList] = useState([]);
+  const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Modal y Wizard
@@ -100,6 +88,7 @@ export function EventsView() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [canSubmit, setCanSubmit] = useState(false); // Prevents double-click save on step 4
 
   // States extras restaurados
   const [selectedServices, setSelectedServices] = useState([]);
@@ -135,15 +124,21 @@ export function EventsView() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [eventsRes, clientsRes, venuesRes] = await Promise.all([
+      const [eventsRes, clientsRes, venuesRes, servicesRes, staffRes] = await Promise.all([
         eventService.getAll(),
         clientService.getAll(),
-        venueService.getAll()
+        venueService.getAll(),
+        serviceExternalService.getAll(),
+        employeeService.getAll()
       ]);
 
       if (!eventsRes.error) setEvents(extractList(eventsRes.data));
       if (!clientsRes.error) setClients(extractList(clientsRes.data));
       if (!venuesRes.error) setVenues(extractList(venuesRes.data));
+      if (!servicesRes.error) setServicesList(extractList(servicesRes.data));
+      if (!staffRes.error) {
+        setStaffList(extractList(staffRes.data).filter(s => s.status === 'active'));
+      }
     } catch (err) {
       console.error(err);
       toast.error("Error al cargar los datos");
@@ -158,18 +153,32 @@ export function EventsView() {
     setCurrentDate(new Date()); 
   }, []);
 
+  // Proteger contra doble clic accidental al llegar al último paso
+  useEffect(() => {
+    if (wizardStep === 4) {
+      setCanSubmit(false);
+      const timer = setTimeout(() => setCanSubmit(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [wizardStep]);
+
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return "";
-    return d.toISOString().split("T")[0]; // yyyy-MM-dd
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   const formatTimeForInput = (dateString) => {
     if (!dateString) return "";
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return "";
-    return d.toTimeString().slice(0, 5); // hh:mm
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${min}`;
   };
 
   const openCreateModal = () => {
@@ -203,8 +212,15 @@ export function EventsView() {
       guests: String(event.guests || "")
     });
     setWizardStep(1);
-    setSelectedServices([]); // Mock default
-    setSelectedStaff([]);    // Mock default
+    
+    // Parsear servicios asignados
+    const eventServices = event.EventItems ? event.EventItems.map(item => item.service_id) : [];
+    setSelectedServices(eventServices);
+
+    // Parsear personal asignado
+    const eventStaffList = event.EventStaffs ? event.EventStaffs.map(staff => staff.employee_id) : [];
+    setSelectedStaff(eventStaffList);
+
     setModalOpen(true);
   };
 
@@ -262,6 +278,31 @@ export function EventsView() {
     }
   };
 
+  // Actions para aceptar/eliminar
+  const handleAcceptEvent = async (event) => {
+    try {
+      const id = event.event_id || event.id;
+      await eventService.update(id, { ...event, status: 'Confirmed' });
+      toast.success("Evento aceptado y confirmado");
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Error al aceptar el evento");
+    }
+  };
+
+  const handleDeleteEvent = async (event) => {
+    if (confirm("¿Estás seguro de que deseas eliminar este evento?")) {
+      try {
+        const id = event.event_id || event.id;
+        await eventService.delete(id);
+        toast.success("Evento eliminado exitosamente");
+        loadData();
+      } catch (err) {
+        toast.error(err.message || "Error al eliminar el evento");
+      }
+    }
+  };
+
   // Nombres Dinámicos
   const getEventName = (event) => {
     if (event.name) return event.name;
@@ -278,11 +319,13 @@ export function EventsView() {
 
   const getEventsForDay = (day) => {
     return events.filter((e) => {
-      const eDate = new Date(e.start_date || e.date);
-      // Validamos si eDate es válido, ya que puede venir de DB o del array
+      const rawDateStr = e.start_date || e.date;
+      if (!rawDateStr) return false;
+      
+      const eDate = new Date(rawDateStr);
+      
       if(isNaN(eDate.getTime())) return false; 
       
-      // Aseguramos timezone coherente 
       return eDate.getFullYear() === currentDate.getFullYear() &&
              eDate.getMonth() === currentDate.getMonth() &&
              eDate.getDate() === day;
@@ -483,7 +526,17 @@ export function EventsView() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap justify-end mt-4 lg:mt-0">
+                        {(event.status === 'Pending' || event.status === 'Lead') && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleAcceptEvent(event)}
+                            className="rounded-xl border-green-500/50 text-green-500 hover:bg-green-500/10 transition-all"
+                          >
+                            <Check className="mr-2 h-4 w-4" />
+                            Aceptar
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           onClick={() => openEditModal(event)}
@@ -491,6 +544,14 @@ export function EventsView() {
                         >
                           <Pencil className="mr-2 h-4 w-4" />
                           Editar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleDeleteEvent(event)}
+                          className="rounded-xl border-red-500/50 text-red-500 hover:bg-red-500/10 transition-all"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Eliminar
                         </Button>
                       </div>
                     </div>
@@ -506,8 +567,8 @@ export function EventsView() {
       {/* RESTAURADO: WIZARD COMPLETO DE 4 PASOS */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
-          <Card className="w-full max-w-3xl rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/40 overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-4 bg-muted/20">
+          <Card className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/40 overflow-hidden">
+            <CardHeader className="flex-none flex flex-row items-center justify-between border-b border-border/50 pb-4 bg-muted/20">
               <CardTitle className="text-xl font-bold text-foreground">
                 {editingEvent ? "Editar Evento" : "Crear Nuevo Evento"}
               </CardTitle>
@@ -518,7 +579,7 @@ export function EventsView() {
                 <X className="h-5 w-5" />
               </button>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="flex-1 overflow-y-auto custom-scrollbar p-6">
               
               {/* Wizard Steps Indicator - Restaurado a 4 pasos */}
               <div className="mb-8 flex items-center justify-between">
@@ -682,28 +743,29 @@ export function EventsView() {
                       Servicios Externos e Items
                     </Label>
                     <div className="grid gap-3 sm:grid-cols-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                      {mockServices.map((service) => (
-                        <button
-                          type="button"
-                          key={service.id}
-                          onClick={() => toggleService(service.id)}
-                          className={`flex items-center justify-between rounded-xl border-2 p-4 text-left transition-all ${selectedServices.includes(service.id) ? "border-[#6b705c] bg-[#6b705c]/10" : "border-input hover:border-[#c05c3c]"}`}
+                      {servicesList.length === 0 ? (
+                        <p className="text-sm text-muted-foreground p-4">No hay servicios disponibles.</p>
+                      ) : servicesList.map((service) => (
+                        <div
+                          key={service.service_id}
+                          onClick={() => toggleService(service.service_id)}
+                          className={`cursor-pointer flex items-center justify-between rounded-xl border-2 p-4 text-left transition-all ${selectedServices.includes(service.service_id) ? "border-[#6b705c] bg-[#6b705c]/10" : "border-input hover:border-[#c05c3c]"}`}
                         >
                           <div>
-                            <p className="font-medium text-foreground">{service.name}</p>
-                            <p className="text-sm text-muted-foreground">{service.unit}</p>
+                            <p className="font-medium text-foreground">{service.name || service.service_type}</p>
+                            <p className="text-sm text-muted-foreground">{service.service_type}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-[#6b705c]">
-                              ${service.price}
+                              ${service.base_price || 0}
                             </span>
-                            {selectedServices.includes(service.id) && (
+                            {selectedServices.includes(service.service_id) && (
                               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6b705c]">
                                 <Check className="h-4 w-4 text-white" />
                               </div>
                             )}
                           </div>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -716,28 +778,29 @@ export function EventsView() {
                       Asignar Personal
                     </Label>
                     <div className="grid gap-3 sm:grid-cols-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                      {mockStaff.map((person) => (
-                        <button
-                          type="button"
-                          key={person.id}
-                          onClick={() => toggleStaff(person.id)}
-                          className={`flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${selectedStaff.includes(person.id) ? "border-[#6b705c] bg-[#6b705c]/10" : "border-input hover:border-[#c05c3c]"}`}
+                      {staffList.length === 0 ? (
+                        <p className="text-sm text-muted-foreground p-4">No hay personal activo.</p>
+                      ) : staffList.map((person) => (
+                        <div
+                          key={person.employee_id}
+                          onClick={() => toggleStaff(person.employee_id)}
+                          className={`cursor-pointer flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${selectedStaff.includes(person.employee_id) ? "border-[#6b705c] bg-[#6b705c]/10" : "border-input hover:border-[#c05c3c]"}`}
                         >
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1d3557]/10">
                             <span className="text-sm font-semibold text-[#1d3557]">
-                              {person.name.split(" ").map((n) => n[0]).join("")}
+                              {person.first_name ? person.first_name[0] : 'E'}
                             </span>
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium text-foreground">{person.name}</p>
-                            <p className="text-sm text-muted-foreground">{person.role}</p>
+                            <p className="font-medium text-foreground">{person.first_name} {person.last_name}</p>
+                            <p className="text-sm text-muted-foreground">{person.rol || "Personal"}</p>
                           </div>
-                          {selectedStaff.includes(person.id) && (
+                          {selectedStaff.includes(person.employee_id) && (
                             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6b705c]">
                               <Check className="h-4 w-4 text-white" />
                             </div>
                           )}
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -765,8 +828,8 @@ export function EventsView() {
                   ) : (
                     <Button
                       type="submit"
-                      disabled={isProcessing}
-                      className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all hover:-translate-y-0.5"
+                      disabled={isProcessing || !canSubmit}
+                      className={`rounded-xl text-white shadow-lg transition-all ${isProcessing || !canSubmit ? "bg-muted-foreground cursor-not-allowed" : "bg-[#c05c3c] shadow-[#c05c3c]/30 hover:bg-[#a84d32] hover:-translate-y-0.5"}`}
                     >
                       {isProcessing ? "Procesando..." : (editingEvent ? "Guardar Cambios" : "Crear Evento")}
                     </Button>
