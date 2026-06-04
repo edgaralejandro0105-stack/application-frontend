@@ -60,6 +60,33 @@ export function CRMView() {
   const [clientEvents, setClientEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
 
+  // Nuevo Cliente
+  const [newClientData, setNewClientData] = useState({
+    name: "",
+    last_name: "",
+    doc_id: "",
+    email: "",
+    phone: "",
+    address: ""
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleCreateClient = async () => {
+    try {
+      setIsSaving(true);
+      const res = await clientService.create(newClientData);
+      if (res.error) throw new Error(res.error);
+      toast.success("Cliente creado exitosamente");
+      setModalOpen(false);
+      setNewClientData({ name: "", last_name: "", doc_id: "", email: "", phone: "", address: "" });
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Error al crear cliente");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -567,38 +594,74 @@ export function CRMView() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nombres</Label>
-                  <Input placeholder="Ej. Juan" className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" />
+                  <Input 
+                    placeholder="Ej. Juan" 
+                    value={newClientData.name}
+                    onChange={e => setNewClientData({...newClientData, name: e.target.value})}
+                    className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" 
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Apellidos</Label>
-                  <Input placeholder="Ej. Pérez" className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" />
+                  <Input 
+                    placeholder="Ej. Pérez" 
+                    value={newClientData.last_name}
+                    onChange={e => setNewClientData({...newClientData, last_name: e.target.value})}
+                    className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" 
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Documento de Identidad</Label>
-                <Input placeholder="V-12345678" className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" />
+                <Input 
+                  placeholder="V-12345678" 
+                  value={newClientData.doc_id}
+                  onChange={e => setNewClientData({...newClientData, doc_id: e.target.value})}
+                  className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" 
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Correo</Label>
-                  <Input type="email" placeholder="correo@ej.com" className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" />
+                  <Input 
+                    type="email" 
+                    placeholder="correo@ej.com" 
+                    value={newClientData.email}
+                    onChange={e => setNewClientData({...newClientData, email: e.target.value})}
+                    className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" 
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Teléfono</Label>
-                  <Input placeholder="0414..." className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" />
+                  <Input 
+                    placeholder="0414..." 
+                    value={newClientData.phone}
+                    onChange={e => setNewClientData({...newClientData, phone: e.target.value})}
+                    className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" 
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Dirección</Label>
-                <Input placeholder="Ej. Calle Principal..." className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" />
+                <Input 
+                  placeholder="Ej. Calle Principal..." 
+                  value={newClientData.address}
+                  onChange={e => setNewClientData({...newClientData, address: e.target.value})}
+                  className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" 
+                />
               </div>
               
               <div className="flex justify-end gap-3 pt-6 border-t border-border/50 mt-2">
                 <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl">
                   Cancelar
                 </Button>
-                <Button onClick={() => setModalOpen(false)} className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all hover:-translate-y-0.5">
-                  Registrar Cliente
+                <Button 
+                  onClick={handleCreateClient} 
+                  disabled={isSaving || !newClientData.name || !newClientData.doc_id}
+                  className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all hover:-translate-y-0.5"
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {isSaving ? "Guardando..." : "Registrar Cliente"}
                 </Button>
               </div>
             </CardContent>
