@@ -266,10 +266,11 @@ export function AdminView() {
   const handleDeleteService = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este servicio?')) {
       try {
-        await serviceExternalService.delete(id)
+        const res = await serviceExternalService.delete(id)
+        if (res && res.error) throw new Error(res.error)
         loadServices()
       } catch (err) {
-        alert('Error al eliminar el servicio')
+        alert('Error al eliminar: ' + err.message)
       }
     }
   }
@@ -628,7 +629,7 @@ export function AdminView() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleDeleteService(service.service_id)}
+                                  onClick={() => handleDeleteService(service.service_id || service.id)}
                                   className="rounded-lg border-[#c05c3c] text-[#c05c3c] hover:bg-[#c05c3c]/10"
                                 >
                                   <Trash2 className="h-4 w-4" />

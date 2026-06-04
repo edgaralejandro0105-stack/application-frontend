@@ -164,21 +164,26 @@ export function EventsView() {
 
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return "";
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
+    try {
+      const parts = dateString.split('T')[0].split(' ')[0].split('-');
+      if (parts.length === 3) {
+        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+      }
+    } catch(e) {}
+    return "";
   };
 
   const formatTimeForInput = (dateString) => {
     if (!dateString) return "";
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return "";
-    const hh = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    return `${hh}:${min}`;
+    try {
+      if (dateString.includes('T')) {
+        return dateString.split('T')[1].substring(0, 5);
+      }
+      if (dateString.includes(' ')) {
+        return dateString.split(' ')[1].substring(0, 5);
+      }
+    } catch(e) {}
+    return "";
   };
 
   const openCreateModal = () => {
@@ -243,16 +248,16 @@ export function EventsView() {
   const onSubmit = async (data) => {
     setIsProcessing(true);
     
-    // Unimos date y time para el backend
-    const startDateTime = new Date(`${data.start_date}T${data.time || "00:00"}:00`);
-    const endDateTime = new Date(`${data.end_date}T${data.time || "23:59"}:00`);
+    // Usamos el formato local explícito para evitar saltos UTC
+    const startDateStr = `${data.start_date} ${data.time || "00:00"}:00`;
+    const endDateStr = `${data.end_date} ${data.time || "23:59"}:00`;
 
     const payload = {
       client_id: Number(data.client_id),
       venue_id: Number(data.venue_id),
       type_event: data.type_event,
-      start_date: startDateTime.toISOString(),
-      end_date: endDateTime.toISOString(),
+      start_date: startDateStr,
+      end_date: endDateStr,
       status: data.status,
       // Incluimos campos extra aunque el backend actual los ignore, para que la UI mantenga el scope
       guests: Number(data.guests) || 0,
@@ -263,10 +268,12 @@ export function EventsView() {
     try {
       if (editingEvent) {
         const id = editingEvent.event_id || editingEvent.id;
-        await eventService.update(id, payload);
+        const res = await eventService.update(id, payload);
+        if (res && res.error) throw new Error(res.error);
         toast.success("Evento actualizado exitosamente");
       } else {
-        await eventService.create(payload);
+        const res = await eventService.create(payload);
+        if (res && res.error) throw new Error(res.error);
         toast.success("Evento creado exitosamente");
       }
       resetWizard();
@@ -282,7 +289,8 @@ export function EventsView() {
   const handleAcceptEvent = async (event) => {
     try {
       const id = event.event_id || event.id;
-      await eventService.update(id, { ...event, status: 'Confirmed' });
+      const res = await eventService.update(id, { ...event, status: 'Confirmed' });
+      if (res && res.error) throw new Error(res.error);
       toast.success("Evento aceptado y confirmado");
       loadData();
     } catch (err) {
@@ -294,7 +302,8 @@ export function EventsView() {
     if (confirm("¿Estás seguro de que deseas eliminar este evento?")) {
       try {
         const id = event.event_id || event.id;
-        await eventService.delete(id);
+        const res = await eventService.delete(id);
+        if (res && res.error) throw new Error(res.error);
         toast.success("Evento eliminado exitosamente");
         loadData();
       } catch (err) {
@@ -322,13 +331,16 @@ export function EventsView() {
       const rawDateStr = e.start_date || e.date;
       if (!rawDateStr) return false;
       
-      const eDate = new Date(rawDateStr);
+      const parts = rawDateStr.split('T')[0].split(' ')[0].split('-');
+      if (parts.length !== 3) return false;
       
-      if(isNaN(eDate.getTime())) return false; 
+      const eYear = parseInt(parts[0], 10);
+      const eMonth = parseInt(parts[1], 10) - 1;
+      const eDay = parseInt(parts[2], 10);
       
-      return eDate.getFullYear() === currentDate.getFullYear() &&
-             eDate.getMonth() === currentDate.getMonth() &&
-             eDate.getDate() === day;
+      return eYear === currentDate.getFullYear() &&
+             eMonth === currentDate.getMonth() &&
+             eDay === day;
     });
   };
 
