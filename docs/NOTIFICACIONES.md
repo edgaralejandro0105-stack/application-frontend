@@ -28,3 +28,13 @@ Durante la implementación inicial, se encontró un problema crítico con el sis
 Actualmente, las notificaciones viven en la memoria local (estado de React). Si recargas la página, la campana vuelve a cero. Para mejorarlo en el futuro, se podría:
 1. Crear una tabla `Notifications` en la base de datos PostgreSQL.
 2. Hacer un `GET /api/notifications` cada vez que el panel cargue para recuperar el historial persistente de eventos.
+
+## 6. Guía para Implementar con un Agente AI (Prompting)
+Si un compañero desea que un agente de IA implemente este mismo sistema en su proyecto, puede proporcionarle el siguiente prompt o instrucción como punto de partida:
+
+> **Prompt sugerido para el Agente AI:**
+> "Necesito implementar un sistema de notificaciones en tiempo real para mi panel de administración en React. Por favor haz lo siguiente:
+> 1. **UI (Interfaz):** Construye un componente `NotificationBell` para la barra de navegación superior. Debe tener un icono de campana y un 'Badge' (insignia roja) que muestre el número de notificaciones no leídas.
+> 2. **Buzón Desplegable:** Al hacer clic en la campana, despliega un menú flotante tipo `Popover` (con scroll interno si es necesario) para ver el historial de notificaciones recientes. **No** uses alertas (toasts) globales que interrumpan toda la pantalla ni redirijas a otra página.
+> 3. **WebSockets:** Usa `socket.io-client` (o la librería en tiempo real que usemos) para conectarte al servidor y escuchar eventos en segundo plano de forma silenciosa (ej: evento `new_notification`).
+> 4. **Actualización de Estado:** Cuando el socket reciba un evento, agrega la nueva notificación al inicio del estado local e incrementa el contador del badge automáticamente, todo sin recargar la página."
