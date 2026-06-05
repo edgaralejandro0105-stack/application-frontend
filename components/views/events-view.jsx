@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { io } from "socket.io-client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -151,6 +152,24 @@ export function EventsView() {
     loadData();
     // Restaurando la fecha actual al hoy real (puedes cambiarlo si necesitas ver 2026)
     setCurrentDate(new Date()); 
+
+    // Escuchar notificaciones en tiempo real para actualizar la tabla
+    let backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    if (backendUrl.endsWith('/api')) {
+      backendUrl = backendUrl.slice(0, -4);
+    }
+    const socket = io(backendUrl, {
+      withCredentials: true
+    });
+
+    socket.on('new_reservation', () => {
+      // Recargar la lista de eventos cuando entra una nueva reserva
+      loadData();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   // Proteger contra doble clic accidental al llegar al último paso
@@ -165,25 +184,23 @@ export function EventsView() {
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
     try {
-      const parts = dateString.split('T')[0].split(' ')[0].split('-');
-      if (parts.length === 3) {
-        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-      }
-    } catch(e) {}
-    return "";
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return "";
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    } catch(e) {
+      return "";
+    }
   };
 
   const formatTimeForInput = (dateString) => {
     if (!dateString) return "";
     try {
-      if (dateString.includes('T')) {
-        return dateString.split('T')[1].substring(0, 5);
-      }
-      if (dateString.includes(' ')) {
-        return dateString.split(' ')[1].substring(0, 5);
-      }
-    } catch(e) {}
-    return "";
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return "";
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    } catch(e) {
+      return "";
+    }
   };
 
   const openCreateModal = () => {
@@ -319,7 +336,22 @@ export function EventsView() {
     return `${event.type_event || 'Evento'} de ${cName}`;
   };
 
-  // Calendario Lógica
+  // Lógica Calendario Nativo
+  
+  const getLocalDateValues = (rawStr) => {
+    if (!rawStr) return null;
+    const d = new Date(rawStr);
+    if (isNaN(d.getTime())) return null;
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      day: d.getDate(),
+      hours: d.getHours(),
+      minutes: d.getMinutes(),
+      timeStr: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:00`
+    };
+  };
+
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const getFirstDayOfMonth = (date) => {
     const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
@@ -328,19 +360,11 @@ export function EventsView() {
 
   const getEventsForDay = (day) => {
     return events.filter((e) => {
-      const rawDateStr = e.start_date || e.date;
-      if (!rawDateStr) return false;
-      
-      const parts = rawDateStr.split('T')[0].split(' ')[0].split('-');
-      if (parts.length !== 3) return false;
-      
-      const eYear = parseInt(parts[0], 10);
-      const eMonth = parseInt(parts[1], 10) - 1;
-      const eDay = parseInt(parts[2], 10);
-      
-      return eYear === currentDate.getFullYear() &&
-             eMonth === currentDate.getMonth() &&
-             eDay === day;
+      const vals = getLocalDateValues(e.start_date || e.date);
+      if (!vals) return false;
+      return vals.year === currentDate.getFullYear() &&
+             vals.month === currentDate.getMonth() &&
+             vals.day === day;
     });
   };
 
@@ -354,6 +378,76 @@ export function EventsView() {
     if (day < 1 || day > daysInMonth) return null;
     return day;
   });
+
+  const handleDragStart = (e, eventItem) => {
+    e.dataTransfer.setData("eventId", eventItem.event_id || eventItem.id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); 
+  };
+
+  const handleDrop = async (e, day) => {
+    e.preventDefault();
+    if (!day) return;
+    
+    const eventId = e.dataTransfer.getData("eventId");
+    if (!eventId) return;
+
+    const originalEvent = events.find(ev => (ev.event_id || ev.id).toString() === eventId);
+    if (!originalEvent) return;
+
+    const vals = getLocalDateValues(originalEvent.start_date || originalEvent.date);
+    if (!vals) {
+      toast.error("Error: el evento tiene una fecha inválida");
+      return;
+    }
+
+    // Nueva fecha combinando el día en que se soltó + la hora original en string para evitar shifts
+    const newDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')} ${vals.timeStr}`;
+    
+    // Extraemos end_date calculando la duración si existe
+    let end_date = originalEvent.end_date;
+    if (end_date) {
+      const endVals = getLocalDateValues(end_date);
+      if (endVals) {
+        // Calcular diferencia en ms usando Date.UTC para evitar DST bugs, pero getTime() es más simple
+        const oldStart = new Date(originalEvent.start_date).getTime();
+        const oldEnd = new Date(originalEvent.end_date).getTime();
+        if (!isNaN(oldStart) && !isNaN(oldEnd)) {
+          const diff = oldEnd - oldStart;
+          // Aplicar la diferencia a la nueva fecha de inicio
+          const newStartObj = new Date(newDateStr.replace(' ', 'T')); 
+          const newEndObj = new Date(newStartObj.getTime() + diff);
+          end_date = `${newEndObj.getFullYear()}-${String(newEndObj.getMonth()+1).padStart(2,'0')}-${String(newEndObj.getDate()).padStart(2,'0')} ${String(newEndObj.getHours()).padStart(2,'0')}:${String(newEndObj.getMinutes()).padStart(2,'0')}:00`;
+        }
+      }
+    }
+
+    try {
+      const res = await eventService.update(eventId, {
+        ...originalEvent,
+        start_date: newDateStr,
+        end_date: end_date || newDateStr
+      });
+      if (res && res.error) throw new Error(res.error);
+      toast.success(`Evento reagendado al ${day} de ${monthNames[currentDate.getMonth()]}`);
+      loadData();
+    } catch (error) {
+      toast.error("Error al reagendar el evento.");
+    }
+  };
+
+  const handleDayClick = (day) => {
+    if (!day) return;
+    const clickDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    openCreateModal();
+    const dateStr = `${clickDate.getFullYear()}-${String(clickDate.getMonth()+1).padStart(2,'0')}-${String(clickDate.getDate()).padStart(2,'0')}`;
+    setTimeout(() => {
+      setValue("start_date", dateStr);
+      setValue("end_date", dateStr);
+    }, 100);
+  };
 
   const wizardSteps = [
     { id: 1, label: "Cliente y Fechas", icon: User },
@@ -406,19 +500,22 @@ export function EventsView() {
         </div>
       )}
 
-      {/* Calendar View */}
+      {/* Calendar View (Native) */}
       {!loading && viewMode === "calendar" && (
-        <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
-          <CardHeader className="border-b border-border/50 pb-4">
+        <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg overflow-hidden">
+          <CardHeader className="border-b border-border/50 pb-4 bg-muted/10">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-semibold text-foreground">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+              <CardTitle className="text-xl font-bold text-foreground">
+                <span className="capitalize">{monthNames[currentDate.getMonth()]}</span> {currentDate.getFullYear()}
               </CardTitle>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={prevMonth} className="rounded-lg border-border hover:bg-muted/50">
+                <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())} className="rounded-lg border-border hover:bg-muted/50 font-semibold shadow-sm">
+                  Hoy
+                </Button>
+                <Button variant="outline" size="sm" onClick={prevMonth} className="rounded-lg border-border hover:bg-muted/50 shadow-sm">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={nextMonth} className="rounded-lg border-border hover:bg-muted/50">
+                <Button variant="outline" size="sm" onClick={nextMonth} className="rounded-lg border-border hover:bg-muted/50 shadow-sm">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -427,12 +524,12 @@ export function EventsView() {
           <CardContent className="p-4">
             <div className="mb-2 grid grid-cols-7 gap-1">
               {daysOfWeek.map((day) => (
-                <div key={day} className="py-2 text-center text-sm font-medium text-muted-foreground">
+                <div key={day} className="py-2 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   {day}
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-2">
               {calendarDays.map((day, index) => {
                 const dayEvents = day ? getEventsForDay(day) : [];
                 const isToday = day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear();
@@ -440,29 +537,37 @@ export function EventsView() {
                 return (
                   <div
                     key={index}
-                    className={`min-h-24 rounded-xl border p-2 transition-all ${day ? "border-border/50 bg-card/50 hover:border-[#c05c3c]/50" : "border-transparent bg-transparent"} ${isToday ? "ring-2 ring-[#c05c3c] bg-card/80" : ""}`}
+                    onDragOver={day ? handleDragOver : null}
+                    onDrop={day ? (e) => handleDrop(e, day) : null}
+                    onClick={() => day ? handleDayClick(day) : null}
+                    className={`min-h-32 rounded-xl border p-2 transition-all duration-200 
+                      ${day ? "border-white/10 bg-card/40 hover:bg-card/80 hover:border-[#c05c3c]/50 cursor-pointer shadow-sm hover:shadow-md" : "border-transparent bg-transparent"} 
+                      ${isToday ? "ring-2 ring-[#c05c3c] bg-[#c05c3c]/5" : ""}`}
                   >
                     {day && (
                       <>
-                        <span className={`text-sm font-bold ${isToday ? "text-[#c05c3c]" : "text-foreground/70"}`}>
+                        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${isToday ? "bg-[#c05c3c] text-white" : "text-foreground/70"}`}>
                           {day}
                         </span>
-                        <div className="mt-1 space-y-1">
-                          {dayEvents.slice(0, 3).map((event) => (
+                        <div className="mt-2 space-y-1.5 custom-scrollbar max-h-[100px] overflow-y-auto">
+                          {dayEvents.map((event) => (
                             <div
                               key={event.event_id || event.id}
-                              onClick={() => openEditModal(event)}
-                              className={`cursor-pointer truncate rounded-md px-1.5 py-1 text-xs font-semibold shadow-sm transition-transform hover:scale-[1.02] ${statusColors[event.status || 'Pending'] || "bg-[#1d3557] text-white"}`}
+                              draggable
+                              onDragStart={(e) => {
+                                e.stopPropagation();
+                                handleDragStart(e, event);
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditModal(event);
+                              }}
+                              className={`cursor-grab active:cursor-grabbing truncate rounded-lg px-2 py-1.5 text-xs font-bold shadow-sm border border-white/10 transition-transform hover:scale-[1.02] hover:shadow-md ${statusColors[event.status || 'Pending'] || "bg-[#1d3557] text-white"}`}
                               title={getEventName(event)}
                             >
                               {getEventName(event)}
                             </div>
                           ))}
-                          {dayEvents.length > 3 && (
-                            <div className="text-xs text-muted-foreground font-medium text-center">
-                              +{dayEvents.length - 3} más
-                            </div>
-                          )}
                         </div>
                       </>
                     )}
@@ -470,11 +575,12 @@ export function EventsView() {
                 );
               })}
             </div>
+            
             <div className="mt-6 flex flex-wrap gap-4 border-t border-border/50 pt-4">
               {Object.entries(statusColors).map(([status, color]) => (
-                <div key={status} className="flex items-center gap-2">
-                  <div className={`h-3 w-3 rounded-full ${color}`} />
-                  <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{statusLabels[status]}</span>
+                <div key={status} className="flex items-center gap-2 bg-card/50 px-3 py-1.5 rounded-full border border-white/5 shadow-sm">
+                  <div className={`h-3 w-3 rounded-full ${color.split(' ')[0]}`} />
+                  <span className="text-xs text-foreground font-bold uppercase tracking-wider">{statusLabels[status]}</span>
                 </div>
               ))}
             </div>

@@ -49,6 +49,12 @@ export function CRMView() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [isExporting, setIsExporting] = useState(false);
   
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -90,11 +96,25 @@ export function CRMView() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const response = await clientService.getAll();
+      const response = await clientService.getAll({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm,
+        status: filterStatus
+      });
       if (response.error) {
         throw new Error(response.error);
       }
       setClients(extractList(response.data));
+      
+      // Extraer datos de paginación
+      if (response.data && response.data.totalPages !== undefined) {
+        setTotalPages(response.data.totalPages);
+        setTotalItems(response.data.total);
+      } else {
+        setTotalPages(1);
+        setTotalItems(extractList(response.data).length);
+      }
     } catch (err) {
       setError(err.message || "Error al cargar clientes");
       console.error("Error:", err);
@@ -104,8 +124,11 @@ export function CRMView() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const timer = setTimeout(() => {
+      loadData();
+    }, 400); // Debounce
+    return () => clearTimeout(timer);
+  }, [searchTerm, filterStatus, currentPage]);
 
   const handleExportPDF = async () => {
     try {
@@ -165,15 +188,7 @@ export function CRMView() {
     }
   };
 
-  const filteredClients = clients.filter((client) => {
-    const name = `${client.name || ''} ${client.last_name || ''}`.trim();
-    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          client.doc_id?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = filterStatus === "All" || client.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  // Eliminado filteredClients ya que filtramos en el backend
 
   const getClientDisplayName = (client) => {
     return `${client.name || ''} ${client.last_name || ''}`.trim();
@@ -432,7 +447,7 @@ export function CRMView() {
                 <Users className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{clients.length}</p>
+                <p className="text-2xl font-bold text-foreground">{totalItems}</p>
                 <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Total Clientes</p>
               </div>
             </div>
@@ -485,7 +500,7 @@ export function CRMView() {
                 <p className="text-sm text-red-500/80">{error}</p>
               </div>
             </div>
-          ) : filteredClients.length === 0 ? (
+          ) : clients.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground/60">
               <Users className="h-16 w-16 mb-4 opacity-20" />
               <p className="text-lg font-medium">No se encontraron clientes</p>
@@ -504,7 +519,7 @@ export function CRMView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {filteredClients.map((client) => {
+                  {clients.map((client) => {
                     const displayName = getClientDisplayName(client);
                     const isVip = client.status === "VIP";
                     
@@ -569,6 +584,35 @@ export function CRMView() {
                   )})}
                 </tbody>
               </table>
+            </div>
+          )}
+          
+          {/* Controles de Paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border/50 bg-card/40 p-4">
+              <span className="text-sm text-muted-foreground font-medium">
+                Página <strong className="text-foreground">{currentPage}</strong> de {totalPages} ({totalItems} clientes en total)
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg border-border hover:bg-muted/50 transition-all"
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg border-border hover:bg-muted/50 transition-all"
+                >
+                  Siguiente
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
