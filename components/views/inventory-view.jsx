@@ -42,6 +42,7 @@ export function InventoryView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("catalog");
+  const [productImage, setProductImage] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -121,6 +122,7 @@ export function InventoryView() {
     setProductStock(0);
     setProductMinStock(0);
     setProductPrice("");
+    setProductImage(null);
     setProductModalOpen(true);
   };
   const openEditProductModal = (product) => {
@@ -133,6 +135,7 @@ export function InventoryView() {
     setProductStock(product.current_stock || 0);
     setProductMinStock(product.min_stock || 0);
     setProductPrice(product.unit_price || "");
+    setProductImage(null);
     setProductModalOpen(true);
   };
   const openMovementModal = (product) => {
@@ -148,21 +151,23 @@ export function InventoryView() {
       alert("Please fill in all required fields.");
       return;
     }
-    const payload = {
-      name: productName,
-      category: productCategory,
-      measurement_unit: productUnit,
-      expiry_date: productExpiry || void 0,
-      min_stock: Number(productMinStock),
-      current_stock: Number(productStock),
-      unit_price: productPrice ? Number(productPrice) : 0
-    };
+    const formData = new FormData();
+    formData.append("name", productName);
+    formData.append("category", productCategory);
+    formData.append("measurement_unit", productUnit);
+    if (productExpiry) formData.append("expiry_date", productExpiry);
+    formData.append("min_stock", productMinStock);
+    formData.append("current_stock", productStock);
+    formData.append("unit_price", productPrice || 0);
+    if (productImage) {
+      formData.append("image", productImage);
+    }
     try {
       let res;
       if (isEditingProduct && selectedProduct) {
-        res = await productService.update(selectedProduct.product_id, payload);
+        res = await productService.update(selectedProduct.product_id, formData);
       } else {
-        res = await productService.create(payload);
+        res = await productService.create(formData);
       }
       if (res.error) {
         alert(`Error al guardar el producto: ${res.error}`);
@@ -773,6 +778,16 @@ export function InventoryView() {
     onChange={(e) => setProductPrice(e.target.value)}
     className="mt-1 rounded-xl"
     placeholder="0.00"
+  />
+              </div>
+
+              <div>
+                <Label className="text-sm font-semibold">Imagen del producto (Opcional)</Label>
+                <Input
+    type="file"
+    accept="image/*"
+    onChange={(e) => setProductImage(e.target.files[0])}
+    className="mt-1 rounded-xl cursor-pointer"
   />
               </div>
 
