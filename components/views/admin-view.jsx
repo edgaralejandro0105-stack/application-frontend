@@ -56,8 +56,9 @@ export function AdminView() {
   const [venueModalOpen, setVenueModalOpen] = useState(false)
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
 
-  // States for Users
+  // States for Users & Roles
   const [users, setUsers] = useState([])
+  const [rolesList, setRolesList] = useState([])
   const [loadingUsers, setLoadingUsers] = useState(false)
 
   const loadUsers = async () => {
@@ -74,8 +75,22 @@ export function AdminView() {
     }
   }
 
+  const loadRoles = async () => {
+    try {
+      const response = await apiClient.get('/roles')
+      if (!response.error) {
+        setRolesList(extractList(response.data))
+      }
+    } catch (err) {
+      console.error('Error al cargar roles:', err)
+    }
+  }
+
   useEffect(() => {
-    if (activeTab === 'users') loadUsers()
+    if (activeTab === 'users') {
+      loadUsers()
+      loadRoles()
+    }
     else if (activeTab === 'venues') loadVenues()
     else if (activeTab === 'services') loadServices()
   }, [activeTab])
@@ -84,7 +99,7 @@ export function AdminView() {
   const [venues, setVenues] = useState([])
   const [loadingVenues, setLoadingVenues] = useState(false)
   const [editingVenue, setEditingVenue] = useState(null)
-  const [venueForm, setVenueForm] = useState({ name: "", capacity: "", status: "Available" })
+  const [venueForm, setVenueForm] = useState({ name: "", capacity: "", status: "Available", base_price: "" })
   const [isSavingVenue, setIsSavingVenue] = useState(false)
 
   // States for Services
@@ -180,13 +195,14 @@ export function AdminView() {
       name: venue.name || '',
       capacity: venue.capacity || '',
       status: venue.status || 'Available',
+      base_price: venue.base_price || '',
     })
     setVenueModalOpen(true)
   }
 
   const handleCreateNewVenue = () => {
     setEditingVenue(null)
-    setVenueForm({ name: '', capacity: '', status: 'Available' })
+    setVenueForm({ name: '', capacity: '', status: 'Available', base_price: '' })
     setVenueModalOpen(true)
   }
 
@@ -504,6 +520,10 @@ export function AdminView() {
                           <p className="text-2xl font-bold text-[#6b705c]">{venue.capacity}</p>
                           <p className="text-xs text-muted-foreground">Capacidad</p>
                         </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-[#c05c3c]">${venue.base_price || 0}</p>
+                          <p className="text-xs text-muted-foreground">Precio Base</p>
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -705,12 +725,15 @@ export function AdminView() {
                     }
                     className="w-full appearance-none rounded-xl border border-input bg-background px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
                   >
-                    <option value={1}>Administrador</option>
-                    <option value={4}>Gerente</option>
-                    <option value={2}>Bartender</option>
-                    <option value={3}>Mesero</option>
-                    <option value={6}>Cajero</option>
-                    <option value={5}>Seguridad</option>
+                    {rolesList.length > 0 ? (
+                      rolesList.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.role_name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={1}>Cargando roles...</option>
+                    )}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 </div>
@@ -792,6 +815,18 @@ export function AdminView() {
                     value={venueForm.capacity}
                     onChange={(e) =>
                       setVenueForm({ ...venueForm, capacity: parseInt(e.target.value) || 0 })
+                    }
+                    className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Precio Base ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="150"
+                    value={venueForm.base_price}
+                    onChange={(e) =>
+                      setVenueForm({ ...venueForm, base_price: parseFloat(e.target.value) || 0 })
                     }
                     className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
                   />

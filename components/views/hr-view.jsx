@@ -27,7 +27,7 @@ import { employeeService } from "@/lib/services/employee.service";
 import { reportService } from "@/lib/services/report.service";
 import { extractList } from "@/lib/api-client";
 
-const departments = ["Todos", "Coordinador", "Chef", "Bar", "Diseño", "Ventas", "Operaciones"];
+const departments = ["Todos", "Administrador", "Bartender", "Mesero", "Gerente", "Seguridad", "Cajero"];
 
 const statusColors = {
   active: "bg-[#6b705c] text-white",
@@ -64,6 +64,7 @@ export function HRView() {
     email: "",
     phone: "",
     rol: "",
+    salary_per_event: "",
     status: "active"
   });
 
@@ -91,7 +92,7 @@ export function HRView() {
       const response = await employeeService.create(newEmployeeData);
       if (response.error) throw new Error(response.error);
       setModalOpen(false);
-      setNewEmployeeData({ first_name: "", last_name: "", email: "", phone: "", rol: "", status: "active" });
+      setNewEmployeeData({ first_name: "", last_name: "", email: "", phone: "", rol: "", salary_per_event: "", status: "active" });
       loadData();
     } catch (err) {
       alert("Error al crear empleado: " + err.message);
@@ -131,6 +132,7 @@ export function HRView() {
       email: employee.email || "",
       phone: employee.phone || "",
       rol: employee.rol || "",
+      salary_per_event: employee.salary_per_event || "",
       status: employee.status || "active"
     });
     setIsEditing(false);
@@ -228,6 +230,7 @@ export function HRView() {
                       email: selectedEmployee.email,
                       phone: selectedEmployee.phone,
                       rol: selectedEmployee.rol,
+                      salary_per_event: selectedEmployee.salary_per_event,
                       status: selectedEmployee.status
                     });
                   }} className="rounded-xl border-border hover:bg-muted/50">
@@ -284,6 +287,10 @@ export function HRView() {
                         <option value="suspended">Suspendido</option>
                       </select>
                     </div>
+                    <div className="space-y-2">
+                      <Label>Tarifa por Evento ($)</Label>
+                      <Input type="number" value={editFormData.salary_per_event} onChange={(e) => setEditFormData({...editFormData, salary_per_event: parseFloat(e.target.value) || 0})} className="rounded-xl focus:ring-[#c05c3c]"/>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -315,6 +322,15 @@ export function HRView() {
                       <p className="font-medium text-foreground">
                         {new Date(selectedEmployee.created_at).toLocaleDateString()}
                       </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/80">
+                      <BadgeCheck className="h-5 w-5 text-[#6b705c]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Tarifa por Evento</p>
+                      <p className="font-medium text-foreground">${selectedEmployee.salary_per_event || "0"}</p>
                     </div>
                   </div>
                 </div>
@@ -507,6 +523,9 @@ export function HRView() {
                           Estado
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                          Tarifa / Evento
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
                           Acciones
                         </th>
                       </tr>
@@ -558,6 +577,9 @@ export function HRView() {
                             >
                               {statusLabels[employee.status] || employee.status}
                             </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="font-semibold text-[#6b705c]">${employee.salary_per_event || 0}</span>
                           </td>
                           <td className="px-6 py-4">
                             <Button
@@ -733,6 +755,16 @@ export function HRView() {
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Tarifa por Evento ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="20"
+                    value={newEmployeeData.salary_per_event}
+                    onChange={(e) => setNewEmployeeData({...newEmployeeData, salary_per_event: parseFloat(e.target.value) || 0})}
+                    className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-foreground">Estado</Label>
