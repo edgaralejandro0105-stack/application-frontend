@@ -101,6 +101,7 @@ export function AdminView() {
   const [editingVenue, setEditingVenue] = useState(null)
   const [venueForm, setVenueForm] = useState({ name: "", capacity: "", status: "Available", base_price: "" })
   const [isSavingVenue, setIsSavingVenue] = useState(false)
+  const [venueImage, setVenueImage] = useState(null)
 
   // States for Services
   const [services, setServices] = useState([])
@@ -108,6 +109,7 @@ export function AdminView() {
   const [editingService, setEditingService] = useState(null)
   const [serviceForm, setServiceForm] = useState({ name: "", service_type: "", base_price: "", provider_info: "" })
   const [isSavingService, setIsSavingService] = useState(false)
+  const [serviceImage, setServiceImage] = useState(null)
 
   const loadVenues = async () => {
     try {
@@ -197,23 +199,32 @@ export function AdminView() {
       status: venue.status || 'Available',
       base_price: venue.base_price || '',
     })
+    setVenueImage(null)
     setVenueModalOpen(true)
   }
 
   const handleCreateNewVenue = () => {
     setEditingVenue(null)
     setVenueForm({ name: '', capacity: '', status: 'Available', base_price: '' })
+    setVenueImage(null)
     setVenueModalOpen(true)
   }
 
   const handleSaveVenue = async () => {
     setIsSavingVenue(true)
     try {
+      const formData = new FormData()
+      formData.append('name', venueForm.name)
+      formData.append('capacity', venueForm.capacity)
+      formData.append('status', venueForm.status)
+      if (venueForm.base_price) formData.append('base_price', venueForm.base_price)
+      if (venueImage) formData.append('image', venueImage)
+
       let res
       if (editingVenue) {
-        res = await venueService.update(editingVenue.venue_id, venueForm)
+        res = await venueService.update(editingVenue.venue_id, formData)
       } else {
-        res = await venueService.create(venueForm)
+        res = await venueService.create(formData)
       }
       if (res && res.error) {
         alert('Error: ' + res.error)
@@ -248,23 +259,32 @@ export function AdminView() {
       base_price: service.base_price || '',
       provider_info: service.provider_info || '',
     })
+    setServiceImage(null)
     setServiceModalOpen(true)
   }
 
   const handleCreateNewService = () => {
     setEditingService(null)
     setServiceForm({ name: '', service_type: '', base_price: '', provider_info: '' })
+    setServiceImage(null)
     setServiceModalOpen(true)
   }
 
   const handleSaveService = async () => {
     setIsSavingService(true)
     try {
+      const formData = new FormData()
+      formData.append('name', serviceForm.name)
+      formData.append('service_type', serviceForm.service_type)
+      if (serviceForm.base_price) formData.append('base_price', serviceForm.base_price)
+      if (serviceForm.provider_info) formData.append('provider_info', serviceForm.provider_info)
+      if (serviceImage) formData.append('image', serviceImage)
+
       let res
       if (editingService) {
-        res = await serviceExternalService.update(editingService.service_id, serviceForm)
+        res = await serviceExternalService.update(editingService.service_id, formData)
       } else {
-        res = await serviceExternalService.create(serviceForm)
+        res = await serviceExternalService.create(formData)
       }
       if (res && res.error) {
         alert('Error: ' + res.error)
@@ -832,6 +852,15 @@ export function AdminView() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Imagen del salón (Opcional)</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setVenueImage(e.target.files[0])}
+                  className="rounded-xl border-input cursor-pointer focus:ring-2 focus:ring-[#c05c3c]"
+                />
+              </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button
                   variant="outline"
@@ -919,6 +948,15 @@ export function AdminView() {
                     className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Imagen del servicio (Opcional)</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setServiceImage(e.target.files[0])}
+                  className="rounded-xl border-input cursor-pointer focus:ring-2 focus:ring-[#c05c3c]"
+                />
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button
