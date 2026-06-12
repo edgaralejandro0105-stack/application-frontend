@@ -73,7 +73,7 @@ export function CRMView() {
     doc_id: "",
     email: "",
     phone: "",
-    address: ""
+    direction: ""
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -84,7 +84,7 @@ export function CRMView() {
       if (res.error) throw new Error(res.error);
       toast.success("Cliente creado exitosamente");
       setModalOpen(false);
-      setNewClientData({ name: "", last_name: "", doc_id: "", email: "", phone: "", address: "" });
+      setNewClientData({ name: "", last_name: "", doc_id: "", email: "", phone: "", direction: "" });
       loadData();
     } catch (err) {
       toast.error(err.message || "Error al crear cliente");
@@ -538,7 +538,7 @@ export function CRMView() {
                           </div>
                           <div>
                             <p className="font-semibold text-foreground text-base">{displayName}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{client.city || "Sin ciudad registrada"}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{client.direction || "Sin dirección registrada"}</p>
                           </div>
                         </div>
                       </td>
@@ -689,8 +689,8 @@ export function CRMView() {
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Dirección</Label>
                 <Input 
                   placeholder="Ej. Calle Principal..." 
-                  value={newClientData.address}
-                  onChange={e => setNewClientData({...newClientData, address: e.target.value})}
+                  value={newClientData.direction}
+                  onChange={e => setNewClientData({...newClientData, direction: e.target.value})}
                   className="rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-[#c05c3c]" 
                 />
               </div>

@@ -376,11 +376,18 @@ export function CreateSale({ onNavigate }) {
                       className={`w-full appearance-none rounded-xl border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c] transition-all ${errors.event_id ? 'border-red-500' : 'border-input'}`}
                     >
                       <option value="">Selecciona un evento...</option>
-                      {events.map(ev => (
-                        <option key={ev.event_id || ev.id} value={String(ev.event_id || ev.id)}>
-                          {ev.name}
-                        </option>
-                      ))}
+                      {events.map(ev => {
+                        const clientName = ev.Client ? `${ev.Client.first_name || ''} ${ev.Client.last_name || ''}`.trim() : 'Cliente';
+                        const date = ev.start_date ? new Date(ev.start_date).toLocaleDateString() : '';
+                        const fallbackName = `${ev.type_event || 'Evento'} - ${clientName} ${date ? `(${date})` : ''}`.trim();
+                        const eventName = ev.title || ev.name || fallbackName;
+                        
+                        return (
+                          <option key={ev.event_id || ev.id} value={String(ev.event_id || ev.id)}>
+                            {eventName}
+                          </option>
+                        );
+                      })}
                     </select>
                     {errors.event_id && <p className="text-xs text-red-500">{errors.event_id.message}</p>}
                   </div>
