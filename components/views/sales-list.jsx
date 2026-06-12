@@ -27,7 +27,10 @@ import {
   Tooltip,
   ResponsiveContainer,
   Area,
-  AreaChart
+  AreaChart,
+  BarChart,
+  Bar,
+  Cell
 } from "recharts";
 
 export function SalesList({ onNavigate }) {
@@ -82,6 +85,21 @@ export function SalesList({ onNavigate }) {
 
     // Ordenar cronológicamente (simplificado)
     return data.slice(-7); // Últimos 7 días con ventas
+  }, [sales]);
+
+  const topEventsData = useMemo(() => {
+    if (!sales || sales.length === 0) return [];
+    const grouped = {};
+    sales.forEach(sale => {
+      const eventName = sale.Event?.name || `Evento #${sale.event_id || 'Sin nombre'}`;
+      if (!grouped[eventName]) grouped[eventName] = 0;
+      grouped[eventName] += Number(sale.total) || 0;
+    });
+
+    return Object.keys(grouped)
+      .map(name => ({ name, value: grouped[name] }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
   }, [sales]);
 
   const totalRevenue = useMemo(() => {
@@ -160,29 +178,98 @@ export function SalesList({ onNavigate }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[140px] w-full">
+            <div className="h-[200px] w-full">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#c05c3c" stopOpacity={0.3}/>
+                        <stop offset="5%" stopColor="#c05c3c" stopOpacity={0.6}/>
                         <stop offset="95%" stopColor="#c05c3c" stopOpacity={0}/>
                       </linearGradient>
+                      <filter id="shadow" height="200%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#c05c3c" floodOpacity="0.4" />
+                      </filter>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} dy={10} />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff' }}
-                      itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                      formatter={(value) => [`$${value.toLocaleString()}`, 'Ingresos']}
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} 
+                      dy={10} 
                     />
-                    <Area type="monotone" dataKey="Total" stroke="#c05c3c" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                      tickFormatter={(value) => `$${value}`}
+                      dx={-10}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        borderRadius: '12px', 
+                        border: '1px solid var(--border)', 
+                        backgroundColor: 'var(--card)', 
+                        color: 'var(--foreground)',
+                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
+                      }}
+                      itemStyle={{ color: '#c05c3c', fontWeight: 'bold' }}
+                      formatter={(value) => [`$${value.toLocaleString()}`, 'Ingresos']}
+                      labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '4px' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="Total" 
+                      stroke="#c05c3c" 
+                      strokeWidth={4} 
+                      fillOpacity={1} 
+                      fill="url(#colorTotal)"
+                      activeDot={{ r: 6, fill: "var(--background)", stroke: "#c05c3c", strokeWidth: 3 }}
+                      style={{ filter: 'url(#shadow)' }}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <p className="text-sm text-muted-foreground">Insuficientes datos para graficar</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Events Chart Card */}
+        <Card className="rounded-2xl border-white/10 bg-card/80 backdrop-blur-md shadow-lg lg:col-span-3">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Top 5 Eventos con Más Ingresos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] w-full">
+              {topEventsData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topEventsData} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} tickFormatter={(value) => `$${value}`} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--foreground)', fontWeight: 500 }} width={120} />
+                    <Tooltip 
+                      cursor={{ fill: 'var(--muted)', opacity: 0.4 }}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', backgroundColor: 'var(--card)' }}
+                      formatter={(value) => [`$${value.toLocaleString()}`, 'Total']}
+                      itemStyle={{ color: '#c05c3c', fontWeight: 'bold' }}
+                    />
+                    <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={24}>
+                      {topEventsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill="#c05c3c" fillOpacity={1 - index * 0.15} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-muted-foreground">No hay suficientes datos</p>
                 </div>
               )}
             </div>

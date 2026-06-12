@@ -435,7 +435,9 @@ export function AdminView() {
                             </td>
                             <td className="px-6 py-4">
                               <p className="text-sm text-muted-foreground">
-                                {new Date(user.create_at).toLocaleDateString()}
+                                {user.create_at || user.createdAt
+                                  ? new Date(user.create_at || user.createdAt).toLocaleDateString()
+                                  : 'No registrado'}
                               </p>
                             </td>
                             <td className="px-6 py-4">

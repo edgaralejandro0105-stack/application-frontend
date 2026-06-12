@@ -20,6 +20,12 @@ export function AuthProvider({ children }) {
       }
     }
     setReady(true);
+
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, []);
   const login = (newToken, userData) => {
     if (typeof window === "undefined") return;
