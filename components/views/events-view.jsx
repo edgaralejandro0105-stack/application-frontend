@@ -159,7 +159,24 @@ export function EventsView() {
       backendUrl = backendUrl.slice(0, -4);
     }
     const socket = io(backendUrl, {
-      withCredentials: true
+      withCredentials: true,
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+
+    socket.on('connect', () => {
+      console.log('Socket conectado en events-view');
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('Error de conexión socket en events-view:', err.message);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Socket desconectado en events-view:', reason);
     });
 
     socket.on('new_reservation', () => {
