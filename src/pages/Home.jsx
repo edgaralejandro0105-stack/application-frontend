@@ -62,11 +62,13 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-background">
-        <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-        <main className="flex min-h-screen flex-col lg:pl-72">
+      <div className="min-h-screen bg-background print:bg-white">
+        <div className="print:hidden">
+          <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+        </div>
+        <main className="flex min-h-screen flex-col lg:pl-72 print:pl-0">
           {/* HEADER / TOPBAR */}
-          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-2 border-b border-border/40 bg-background/40 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-2 border-b border-border/40 bg-background/40 px-4 backdrop-blur-md sm:px-6 lg:px-8 print:hidden">
             <NotificationBell onNavigate={setActiveSection} />
             <ThemeToggle />
             <DropdownMenu>
@@ -105,7 +107,7 @@ export default function Home() {
           </header>
 
           {/* MAIN CONTENT AREA */}
-          <div className="flex-1 px-4 py-8 lg:px-8">{renderContent()}</div>
+          <div className="flex-1 px-4 py-8 lg:px-8 print:p-0 print:m-0">{renderContent()}</div>
         </main>
       </div>
     </ProtectedRoute>

@@ -12,11 +12,13 @@ import {
   Lamp,
   Armchair,
   History,
-  RefreshCw,
   Edit2,
   Trash2,
   Download,
-  Loader2
+  Loader2,
+  SlidersHorizontal,
+  Filter,
+  RefreshCw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +62,29 @@ export function InventoryView() {
   const [productStock, setProductStock] = useState(0);
   const [productMinStock, setProductMinStock] = useState(0);
   const [productPrice, setProductPrice] = useState("");
+  
+  // New Filter States
+  const [stockStatus, setStockStatus] = useState("All");
+  const [expiryStatus, setExpiryStatus] = useState("All");
+  const [sortBy, setSortBy] = useState("nameAsc");
+  const [showCatalogFilters, setShowCatalogFilters] = useState(false);
+  
+  // Productos Pagination
+  const [productPage, setProductPage] = useState(1);
+  const [productTotalPages, setProductTotalPages] = useState(1);
+  const [productTotalItems, setProductTotalItems] = useState(0);
+
+  // Movimientos Pagination
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [historyTotalItems, setHistoryTotalItems] = useState(0);
+
+  const itemsPerPage = 10;
+  
+  const [historySearchTerm, setHistorySearchTerm] = useState("");
+  const [historyType, setHistoryType] = useState("All");
+  const [historyDateRange, setHistoryDateRange] = useState({ from: "", to: "" });
+  const [showHistoryFilters, setShowHistoryFilters] = useState(false);
   const categories = ["All", "Beverages", "Catering", "Decoracion", "Furniture", "Table Linens", "Glassware", "Floral", "Bar", "General"];
   const formCategories = ["Beverages", "Catering", "Decoracion", "Furniture", "Table Linens", "Glassware", "Floral", "Bar", "General"];
   const loadData = async () => {
@@ -68,11 +93,22 @@ export function InventoryView() {
       setError(null);
       const [productsRes, movementsRes] = await Promise.all([
         productService.getAll({
-          limit: 100,
+          page: productPage,
+          limit: itemsPerPage,
           search: searchTerm || void 0,
-          category: filterCategory === "All" ? void 0 : filterCategory
+          category: filterCategory === "All" ? void 0 : filterCategory,
+          stockStatus: stockStatus === "All" ? void 0 : stockStatus,
+          expiryStatus: expiryStatus === "All" ? void 0 : expiryStatus,
+          sortBy: sortBy
         }),
-        inventorybarService.getAll({ limit: 100 })
+        inventorybarService.getAll({ 
+          page: historyPage,
+          limit: itemsPerPage,
+          movement_type: historyType === "All" ? void 0 : historyType,
+          startDate: historyDateRange.from || void 0,
+          endDate: historyDateRange.to || void 0,
+          search: historySearchTerm || void 0
+        })
       ]);
       if (productsRes.error) {
         throw new Error(productsRes.error);
@@ -81,7 +117,15 @@ export function InventoryView() {
         throw new Error(movementsRes.error);
       }
       setProducts(productsRes.data?.data || []);
+      if (productsRes.data && productsRes.data.totalPages !== undefined) {
+         setProductTotalPages(productsRes.data.totalPages);
+         setProductTotalItems(productsRes.data.total);
+      }
       setMovements(movementsRes.data?.data || []);
+      if (movementsRes.data && movementsRes.data.totalPages !== undefined) {
+         setHistoryTotalPages(movementsRes.data.totalPages);
+         setHistoryTotalItems(movementsRes.data.total);
+      }
     } catch (err) {
       console.error("Error loading inventory data:", err);
       setError(err.message || "Error al cargar los datos");
@@ -92,12 +136,20 @@ export function InventoryView() {
   const loadProducts = async () => {
     try {
       const res = await productService.getAll({
-        limit: 100,
+        page: productPage,
+        limit: itemsPerPage,
         search: searchTerm || void 0,
-        category: filterCategory === "All" ? void 0 : filterCategory
+        category: filterCategory === "All" ? void 0 : filterCategory,
+        stockStatus: stockStatus === "All" ? void 0 : stockStatus,
+        expiryStatus: expiryStatus === "All" ? void 0 : expiryStatus,
+        sortBy: sortBy
       });
       if (!res.error && res.data) {
         setProducts(res.data.data || []);
+        if (res.data.totalPages !== undefined) {
+           setProductTotalPages(res.data.totalPages);
+           setProductTotalItems(res.data.total);
+        }
       }
     } catch (err) {
       console.error("Error loading products:", err);
@@ -111,7 +163,14 @@ export function InventoryView() {
       loadProducts();
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, filterCategory]);
+  }, [searchTerm, filterCategory, stockStatus, expiryStatus, sortBy, productPage]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadData();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [historyType, historyDateRange, historySearchTerm, historyPage]);
   const openAddProductModal = () => {
     setIsEditingProduct(false);
     setSelectedProduct(null);
@@ -232,6 +291,19 @@ export function InventoryView() {
     }
   };
 
+  const filteredProducts = products;
+
+  const filteredMovements = movements.filter(m => {
+    const product = products.find((p) => p.product_id === m.product_id);
+    const pName = product?.name || `ID: ${m.product_id}`;
+    const uName = m.user_id ? `ID: ${m.user_id}` : "Sistema";
+
+    const term = historySearchTerm.toLowerCase();
+    const matchesSearch = pName.toLowerCase().includes(term) || uName.toLowerCase().includes(term);
+
+    return matchesSearch;
+  });
+
   const lowStockProducts = products.filter((p) => (p.current_stock ?? 0) < (p.min_stock ?? 0));
   if (loading && products.length === 0) {
     return <div className="flex items-center justify-center min-h-[400px]">
@@ -345,25 +417,81 @@ export function InventoryView() {
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-    placeholder="Buscar productos..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    className="h-9 rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
-  />
+                    placeholder="Buscar productos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-9 rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
+                  />
                 </div>
-                <div className="relative w-full sm:w-48">
-                  <select
-    value={filterCategory}
-    onChange={(e) => setFilterCategory(e.target.value)}
-    className="h-9 appearance-none rounded-lg border border-input bg-background pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
-  >
-                    {categories.map((cat) => <option key={cat} value={cat}>
-                        {cat === "All" ? "Todos" : cat}
-                      </option>)}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <div className="flex flex-wrap gap-2 items-center">
+                  <div className="relative w-full sm:w-40">
+                    <select
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      className="w-full h-9 appearance-none rounded-lg border border-input bg-background pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      {categories.map((cat) => <option key={cat} value={cat}>
+                          {cat === "All" ? "Todas las Categorías" : cat}
+                        </option>)}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCatalogFilters(!showCatalogFilters)}
+                    className={`h-9 rounded-lg border-border transition-all ${showCatalogFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+                  >
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filtros
+                  </Button>
                 </div>
               </div>
+              
+              {showCatalogFilters && (
+                <div className="mt-4 p-4 border-t border-border/50 bg-background/50 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in slide-in-from-top-2 duration-200">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado del Stock</Label>
+                    <select
+                      value={stockStatus}
+                      onChange={(e) => setStockStatus(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="All">Todos</option>
+                      <option value="Normal">Stock Normal</option>
+                      <option value="Low">Stock Bajo</option>
+                      <option value="Out">Agotado</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Vencimiento</Label>
+                    <select
+                      value={expiryStatus}
+                      onChange={(e) => setExpiryStatus(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="All">Todos</option>
+                      <option value="Good">Vigentes</option>
+                      <option value="Expiring">Próximos a Vencer</option>
+                      <option value="Expired">Vencidos</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ordenar por</Label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="nameAsc">Nombre (A-Z)</option>
+                      <option value="nameDesc">Nombre (Z-A)</option>
+                      <option value="stockDesc">Mayor Stock</option>
+                      <option value="stockAsc">Menor Stock</option>
+                      <option value="priceDesc">Mayor Precio</option>
+                      <option value="priceAsc">Menor Precio</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -403,11 +531,11 @@ export function InventoryView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {products.length === 0 ? <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                    {filteredProducts.length === 0 ? <tr>
+                        <td colSpan={8} className="px-6 py-8 text-center text-muted-foreground">
                           No se encontraron productos
                         </td>
-                      </tr> : products.map((product) => {
+                      </tr> : filteredProducts.map((product) => {
     const isLowStock = (product.current_stock ?? 0) < (product.min_stock ?? 0);
     const IconComponent = categoryIcons[product.category] || Package;
     return <tr
@@ -494,6 +622,35 @@ export function InventoryView() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Pagination for Products */}
+              {productTotalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/50 bg-card/50">
+                  <span className="text-sm text-muted-foreground font-medium">
+                    Página <strong className="text-foreground">{productPage}</strong> de {productTotalPages} ({productTotalItems} productos)
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setProductPage(prev => Math.max(1, prev - 1))}
+                      disabled={productPage === 1}
+                      className="rounded-lg border-border"
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setProductPage(prev => Math.min(productTotalPages, prev + 1))}
+                      disabled={productPage === productTotalPages}
+                      className="rounded-lg border-border"
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </>}
@@ -502,12 +659,67 @@ export function InventoryView() {
     /* History View */
   }
       {activeTab === "history" && <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
-          <CardHeader>
+          <CardHeader className="flex flex-col md:flex-row justify-between gap-4 pb-4">
             <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
               <History className="h-5 w-5 text-[#c05c3c]" />
               Historial de movimientos
             </CardTitle>
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="relative max-w-xs w-full">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar producto o usuario..."
+                  value={historySearchTerm}
+                  onChange={(e) => setHistorySearchTerm(e.target.value)}
+                  className="h-9 rounded-lg border-input pl-9 text-sm"
+                />
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowHistoryFilters(!showHistoryFilters)}
+                className={`h-9 rounded-lg border-border ${showHistoryFilters ? 'bg-[#1d3557] text-white' : ''}`}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+              </Button>
+            </div>
           </CardHeader>
+          
+          {showHistoryFilters && (
+            <div className="px-6 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-border/50 bg-background/50 animate-in slide-in-from-top-2">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipo de Movimiento</Label>
+                <select
+                  value={historyType}
+                  onChange={(e) => setHistoryType(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                >
+                  <option value="All">Todos</option>
+                  <option value="Entry">Entrada</option>
+                  <option value="Exit">Salida</option>
+                  <option value="Adjustment">Ajuste</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Rango de Fechas</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="date" 
+                    value={historyDateRange.from} 
+                    onChange={(e) => setHistoryDateRange({...historyDateRange, from: e.target.value})}
+                    className="h-9"
+                  />
+                  <span className="text-muted-foreground">a</span>
+                  <Input 
+                    type="date" 
+                    value={historyDateRange.to} 
+                    onChange={(e) => setHistoryDateRange({...historyDateRange, to: e.target.value})}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -534,13 +746,13 @@ export function InventoryView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {movements.length === 0 ? <tr>
+                  {filteredMovements.length === 0 ? <tr>
                       <td colSpan={6} className="px-6 py-8">
                         <div className="text-center text-muted-foreground">
-                          <p className="text-sm">No se registraron movimientos</p>
+                          <p className="text-sm">No se encontraron movimientos con los filtros aplicados</p>
                         </div>
                       </td>
-                    </tr> : movements.map((movement) => {
+                    </tr> : filteredMovements.map((movement) => {
     const product = products.find((p) => p.product_id === movement.product_id);
     const productName2 = product ? product.name : `Producto ID: ${movement.product_id}`;
     const unitName = product ? product.measurement_unit : "";
@@ -579,6 +791,35 @@ export function InventoryView() {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination for Movements */}
+            {historyTotalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/50 bg-card/50">
+                <span className="text-sm text-muted-foreground font-medium">
+                  Página <strong className="text-foreground">{historyPage}</strong> de {historyTotalPages} ({historyTotalItems} movimientos)
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                    disabled={historyPage === 1}
+                    className="rounded-lg border-border"
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryPage(prev => Math.min(historyTotalPages, prev + 1))}
+                    disabled={historyPage === historyTotalPages}
+                    className="rounded-lg border-border"
+                  >
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>}
       </div>

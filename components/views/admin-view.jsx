@@ -14,6 +14,7 @@ import {
   Shield,
   Edit,
   Trash2,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -60,6 +61,10 @@ export function AdminView() {
   const [users, setUsers] = useState([])
   const [rolesList, setRolesList] = useState([])
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [usersSearch, setUsersSearch] = useState("")
+  const [usersFilterRole, setUsersFilterRole] = useState("All")
+  const [usersFilterStatus, setUsersFilterStatus] = useState("All")
+  const [showUsersFilters, setShowUsersFilters] = useState(false)
 
   const loadUsers = async () => {
     try {
@@ -102,6 +107,9 @@ export function AdminView() {
   const [venueForm, setVenueForm] = useState({ name: "", capacity: "", status: "Available", base_price: "" })
   const [isSavingVenue, setIsSavingVenue] = useState(false)
   const [venueImage, setVenueImage] = useState(null)
+  const [venuesSearch, setVenuesSearch] = useState("")
+  const [venuesFilterStatus, setVenuesFilterStatus] = useState("All")
+  const [showVenuesFilters, setShowVenuesFilters] = useState(false)
 
   // States for Services
   const [services, setServices] = useState([])
@@ -110,6 +118,9 @@ export function AdminView() {
   const [serviceForm, setServiceForm] = useState({ name: "", service_type: "", base_price: "", provider_info: "" })
   const [isSavingService, setIsSavingService] = useState(false)
   const [serviceImage, setServiceImage] = useState(null)
+  const [servicesSearch, setServicesSearch] = useState("")
+  const [servicesFilterType, setServicesFilterType] = useState("All")
+  const [showServicesFilters, setShowServicesFilters] = useState(false)
 
   const loadVenues = async () => {
     try {
@@ -350,22 +361,67 @@ export function AdminView() {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card/60 p-4 rounded-2xl border border-white/10 shadow-sm">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Buscar usuarios..."
-                  className="h-9 rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
+                  value={usersSearch}
+                  onChange={(e) => setUsersSearch(e.target.value)}
+                  className="h-9 w-full rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
                 />
               </div>
-              <Button
-                onClick={handleCreateNewUser}
-                className="h-9 rounded-lg bg-[#c05c3c] text-white shadow-md hover:bg-[#a84d32] px-4 text-sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo usuario
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowUsersFilters(!showUsersFilters)}
+                  className={`h-9 rounded-lg border-border transition-all ${showUsersFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+                >
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filtros
+                </Button>
+                <Button
+                  onClick={handleCreateNewUser}
+                  className="h-9 rounded-lg bg-[#c05c3c] text-white shadow-md hover:bg-[#a84d32] px-4 text-sm"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo usuario
+                </Button>
+              </div>
             </div>
+
+            {showUsersFilters && (
+              <Card className="glass-panel rounded-2xl animate-in slide-in-from-top-2">
+                <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Rol</Label>
+                    <select
+                      value={usersFilterRole}
+                      onChange={(e) => setUsersFilterRole(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="All">Todos</option>
+                      {rolesList.map((r) => (
+                        <option key={r.id} value={String(r.id)}>{r.role_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado</Label>
+                    <select
+                      value={usersFilterStatus}
+                      onChange={(e) => setUsersFilterStatus(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="All">Todos</option>
+                      <option value="active">Activo</option>
+                      <option value="inactive">Inactivo</option>
+                      <option value="suspended">Suspendido</option>
+                    </select>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
               <CardContent className="p-0">
@@ -397,14 +453,26 @@ export function AdminView() {
                             Cargando usuarios...
                           </td>
                         </tr>
-                      ) : users.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" className="px-6 py-4 text-center text-muted-foreground">
-                            No hay usuarios registrados.
-                          </td>
-                        </tr>
-                      ) : (
-                        users.map((user) => (
+                      ) : (() => {
+                        const filteredUsers = users.filter((u) => {
+                          const term = usersSearch.toLowerCase()
+                          const matchSearch = (u.name || "").toLowerCase().includes(term) || (u.email || "").toLowerCase().includes(term)
+                          const matchRole = usersFilterRole === "All" || String(u.role_id) === usersFilterRole
+                          const matchStatus = usersFilterStatus === "All" || u.status === usersFilterStatus
+                          return matchSearch && matchRole && matchStatus
+                        })
+
+                        if (filteredUsers.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan="5" className="px-6 py-4 text-center text-muted-foreground">
+                                No se encontraron usuarios.
+                              </td>
+                            </tr>
+                          )
+                        }
+
+                        return filteredUsers.map((user) => (
                           <tr
                             key={user.user_id}
                             className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm"
@@ -475,7 +543,7 @@ export function AdminView() {
                             </td>
                           </tr>
                         ))
-                      )}
+                      })()}
                     </tbody>
                   </table>
                 </div>
@@ -487,34 +555,71 @@ export function AdminView() {
         {/* Venues Tab */}
         {activeTab === 'venues' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <Card className="flex-1 rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
-                <CardContent className="p-4">
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar salones..."
-                      className="rounded-xl border-input pl-10 focus:ring-2 focus:ring-[#c05c3c]"
-                    />
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card/60 p-4 rounded-2xl border border-white/10 shadow-sm">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar salones..."
+                  value={venuesSearch}
+                  onChange={(e) => setVenuesSearch(e.target.value)}
+                  className="rounded-xl border-input pl-10 focus:ring-2 focus:ring-[#c05c3c]"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowVenuesFilters(!showVenuesFilters)}
+                  className={`h-9 rounded-lg border-border transition-all ${showVenuesFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+                >
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filtros
+                </Button>
+                <Button
+                  onClick={handleCreateNewVenue}
+                  className="h-9 rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo salón
+                </Button>
+              </div>
+            </div>
+
+            {showVenuesFilters && (
+              <Card className="glass-panel rounded-2xl animate-in slide-in-from-top-2">
+                <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado</Label>
+                    <select
+                      value={venuesFilterStatus}
+                      onChange={(e) => setVenuesFilterStatus(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="All">Todos</option>
+                      {venueStatuses.map((s) => (
+                        <option key={s} value={s}>{statusLabels[s]}</option>
+                      ))}
+                    </select>
                   </div>
                 </CardContent>
               </Card>
-              <Button
-                onClick={handleCreateNewVenue}
-                className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo salón
-              </Button>
-            </div>
+            )}
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {loadingVenues ? (
                 <p className="text-muted-foreground p-4">Cargando salones...</p>
-              ) : venues.length === 0 ? (
-                <p className="text-muted-foreground p-4">No hay salones.</p>
-              ) : (
-                venues.map((venue) => (
+              ) : (() => {
+                const filteredVenues = venues.filter((v) => {
+                  const term = venuesSearch.toLowerCase()
+                  const matchSearch = (v.name || "").toLowerCase().includes(term)
+                  const matchStatus = venuesFilterStatus === "All" || v.status === venuesFilterStatus
+                  return matchSearch && matchStatus
+                })
+
+                if (filteredVenues.length === 0) {
+                  return <p className="text-muted-foreground p-4">No se encontraron salones.</p>
+                }
+
+                return filteredVenues.map((venue) => (
                   <Card
                     key={venue.venue_id || Math.random()}
                     className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40"
@@ -566,7 +671,7 @@ export function AdminView() {
                     </CardContent>
                   </Card>
                 ))
-              )}
+              })()}
             </div>
           </div>
         )}
@@ -574,26 +679,54 @@ export function AdminView() {
         {/* External Services Tab */}
         {activeTab === 'services' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <Card className="flex-1 rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
-                <CardContent className="p-4">
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar servicios..."
-                      className="rounded-xl border-input pl-10 focus:ring-2 focus:ring-[#c05c3c]"
-                    />
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card/60 p-4 rounded-2xl border border-white/10 shadow-sm">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar servicios..."
+                  value={servicesSearch}
+                  onChange={(e) => setServicesSearch(e.target.value)}
+                  className="h-9 rounded-xl border-input pl-10 focus:ring-2 focus:ring-[#c05c3c]"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowServicesFilters(!showServicesFilters)}
+                  className={`h-9 rounded-lg border-border transition-all ${showServicesFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+                >
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filtros
+                </Button>
+                <Button
+                  onClick={handleCreateNewService}
+                  className="h-9 rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo servicio
+                </Button>
+              </div>
+            </div>
+
+            {showServicesFilters && (
+              <Card className="glass-panel rounded-2xl animate-in slide-in-from-top-2">
+                <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipo</Label>
+                    <select
+                      value={servicesFilterType}
+                      onChange={(e) => setServicesFilterType(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="All">Todos</option>
+                      {Array.from(new Set(services.map(s => s.service_type))).map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
                   </div>
                 </CardContent>
               </Card>
-              <Button
-                onClick={handleCreateNewService}
-                className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo servicio
-              </Button>
-            </div>
+            )}
 
             <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
               <CardContent className="p-0">
@@ -625,14 +758,25 @@ export function AdminView() {
                             Cargando servicios...
                           </td>
                         </tr>
-                      ) : services.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" className="p-4 text-center">
-                            No hay servicios externos.
-                          </td>
-                        </tr>
-                      ) : (
-                        services.map((service) => (
+                      ) : (() => {
+                        const filteredServices = services.filter((s) => {
+                          const term = servicesSearch.toLowerCase()
+                          const matchSearch = (s.name || "").toLowerCase().includes(term) || (s.provider_info || "").toLowerCase().includes(term)
+                          const matchType = servicesFilterType === "All" || s.service_type === servicesFilterType
+                          return matchSearch && matchType
+                        })
+
+                        if (filteredServices.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan="5" className="p-4 text-center">
+                                No se encontraron servicios externos.
+                              </td>
+                            </tr>
+                          )
+                        }
+
+                        return filteredServices.map((service) => (
                           <tr
                             key={service.service_id || Math.random()}
                             className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm"
@@ -680,7 +824,7 @@ export function AdminView() {
                             </td>
                           </tr>
                         ))
-                      )}
+                      })()}
                     </tbody>
                   </table>
                 </div>

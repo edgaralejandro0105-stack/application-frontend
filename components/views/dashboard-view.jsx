@@ -66,10 +66,10 @@ export function DashboardView() {
         setError(null);
 
         const [eventsRes, clientsRes, inventoryRes, salesRes] = await Promise.all([
-          eventService.getAll(),
-          clientService.getAll(),
+          eventService.getAll({ limit: 10000 }),
+          clientService.getAll({ limit: 10000 }),
           inventoryService.getLowStockItems ? inventoryService.getLowStockItems() : Promise.resolve({ data: [] }),
-          saleService.getAll()
+          saleService.getAll({ limit: 10000 })
         ]);
 
         const getArray = (resPayload) => {
@@ -247,7 +247,7 @@ export function DashboardView() {
                             {event.name || `${event.type_event || 'Evento'} de ${event.Client?.name || 'Cliente'}`}
                           </p>
                           <p className="text-sm text-muted-foreground font-medium">
-                            {event.Venue?.name || event.venue_name || "Sin Salón"}
+                            {event.Venues && event.Venues.length > 0 ? event.Venues.map(v => v.name).join(', ') : (event.Venue?.name || event.venue_name || "Sin Salón")}
                           </p>
                         </div>
                       </div>

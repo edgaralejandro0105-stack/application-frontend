@@ -10,11 +10,13 @@ import {
   X,
   TrendingUp,
   Download,
-  Loader2
+  Loader2,
+  SlidersHorizontal
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { saleService } from "@/lib/services/sale.service";
 import { reportService } from "@/lib/services/report.service";
 import { extractList } from "@/lib/api-client";
@@ -38,6 +40,10 @@ export function SalesList({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [amountRange, setAmountRange] = useState({ min: "", max: "" });
+  const [sortBy, setSortBy] = useState("dateDesc");
+  const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
@@ -62,7 +68,48 @@ export function SalesList({ onNavigate }) {
 
   const filteredSales = sales.filter((sale) => {
     const eventName = sale.Event?.name?.toLowerCase() || `evento ${sale.event_id}`;
-    return eventName.includes(searchTerm.toLowerCase());
+    const transactionId = `#${String(sale.sale_id).padStart(5, '0')}`;
+    const term = searchTerm.toLowerCase();
+    
+    const matchesSearch = eventName.includes(term) || transactionId.includes(term);
+
+    // Date Range
+    let matchesDate = true;
+    const saleDate = new Date(sale.create_at || sale.createdAt);
+    if (dateRange.from) {
+      matchesDate = matchesDate && saleDate >= new Date(dateRange.from);
+    }
+    if (dateRange.to) {
+      const toDate = new Date(dateRange.to);
+      toDate.setHours(23, 59, 59, 999);
+      matchesDate = matchesDate && saleDate <= toDate;
+    }
+
+    // Amount Range
+    let matchesAmount = true;
+    const amount = Number(sale.total) || 0;
+    if (amountRange.min) {
+      matchesAmount = matchesAmount && amount >= Number(amountRange.min);
+    }
+    if (amountRange.max) {
+      matchesAmount = matchesAmount && amount <= Number(amountRange.max);
+    }
+
+    return matchesSearch && matchesDate && matchesAmount;
+  }).sort((a, b) => {
+    if (sortBy === "dateDesc") {
+      return new Date(b.create_at || b.createdAt) - new Date(a.create_at || a.createdAt);
+    }
+    if (sortBy === "dateAsc") {
+      return new Date(a.create_at || a.createdAt) - new Date(b.create_at || b.createdAt);
+    }
+    if (sortBy === "amountDesc") {
+      return (Number(b.total) || 0) - (Number(a.total) || 0);
+    }
+    if (sortBy === "amountAsc") {
+      return (Number(a.total) || 0) - (Number(b.total) || 0);
+    }
+    return 0;
   });
 
   // Procesar datos para el gráfico de los últimos 7 días
@@ -83,8 +130,8 @@ export function SalesList({ onNavigate }) {
       Total: salesByDate[date]
     }));
 
-    // Ordenar cronológicamente (simplificado)
-    return data.slice(-7); // Últimos 7 días con ventas
+    // Tomamos los 7 días más recientes y los invertimos para mostrar de más antiguo a más nuevo (izquierda a derecha)
+    return data.slice(0, 7).reverse();
   }, [sales]);
 
   const topEventsData = useMemo(() => {
@@ -280,15 +327,81 @@ export function SalesList({ onNavigate }) {
       {/* Search & Table */}
       <Card className="overflow-hidden rounded-2xl border-white/10 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
         <div className="p-4 border-b border-border/50 bg-muted/20">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre de evento..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="rounded-xl border-input pl-10 focus:ring-2 focus:ring-[#c05c3c] bg-background/50"
-            />
+          <div className="flex flex-col md:flex-row justify-between gap-4">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por evento o # transacción..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="rounded-xl border-input pl-10 focus:ring-2 focus:ring-[#c05c3c] bg-background/50"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="h-9 rounded-xl border border-input bg-background/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+              >
+                <option value="dateDesc">Más recientes</option>
+                <option value="dateAsc">Más antiguos</option>
+                <option value="amountDesc">Mayor monto</option>
+                <option value="amountAsc">Menor monto</option>
+              </select>
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                className={`h-9 rounded-xl border-border transition-all ${showFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+              >
+                <SlidersHorizontal className="h-4 w-4 mr-2" />
+                Filtros
+              </Button>
+            </div>
           </div>
+          
+          {/* Advanced Filters Panel */}
+          {showFilters && (
+            <div className="mt-4 p-4 rounded-xl bg-background/50 border border-white/5 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2 duration-200">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Rango de Fechas</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="date" 
+                    value={dateRange.from} 
+                    onChange={(e) => setDateRange({...dateRange, from: e.target.value})}
+                    className="rounded-lg h-9 bg-background/50"
+                  />
+                  <span className="text-muted-foreground text-sm">a</span>
+                  <Input 
+                    type="date" 
+                    value={dateRange.to} 
+                    onChange={(e) => setDateRange({...dateRange, to: e.target.value})}
+                    className="rounded-lg h-9 bg-background/50"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Monto Total ($)</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="number" 
+                    placeholder="Min" 
+                    value={amountRange.min} 
+                    onChange={(e) => setAmountRange({...amountRange, min: e.target.value})}
+                    className="rounded-lg h-9 bg-background/50"
+                  />
+                  <span className="text-muted-foreground text-sm">-</span>
+                  <Input 
+                    type="number" 
+                    placeholder="Max" 
+                    value={amountRange.max} 
+                    onChange={(e) => setAmountRange({...amountRange, max: e.target.value})}
+                    className="rounded-lg h-9 bg-background/50"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         <CardContent className="p-0">

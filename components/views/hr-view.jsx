@@ -14,10 +14,10 @@ import {
   Clock,
   ArrowLeft,
   Edit,
-  Save,
   Trash2,
   Download,
-  Loader2
+  Loader2,
+  SlidersHorizontal
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,10 +47,22 @@ export function HRView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("Todos");
+  const [filterStatus, setFilterStatus] = useState("Todos");
+  const [filterAssignment, setFilterAssignment] = useState("Todos");
+  const [salaryRange, setSalaryRange] = useState({ min: "", max: "" });
+  const [sortBy, setSortBy] = useState("dateDesc");
+  const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
+  const [allEmployeesForAssignments, setAllEmployeesForAssignments] = useState([]);
 
   // Perfil seleccionado
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -71,10 +83,26 @@ export function HRView() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const response = await employeeService.getAll();
+      const response = await employeeService.getAll({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm || void 0,
+        rol: filterDepartment === "Todos" ? void 0 : filterDepartment,
+        status: filterStatus === "Todos" ? void 0 : filterStatus,
+      });
       if (response.error) throw new Error(response.error);
       const data = extractList(response.data);
       setEmployees(data);
+      if (response.data && response.data.totalPages !== undefined) {
+         setTotalPages(response.data.totalPages);
+         setTotalItems(response.data.total);
+      }
+      
+      // Cargar todas las asignaciones sin paginación para el panel
+      const allResponse = await employeeService.getAll({ limit: 10000 });
+      if (!allResponse.error) {
+        setAllEmployeesForAssignments(extractList(allResponse.data));
+      }
     } catch (err) {
       setError(err.message || "Error al cargar empleados");
       console.error("Error:", err);
@@ -84,8 +112,11 @@ export function HRView() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const timer = setTimeout(() => {
+      loadData();
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, filterDepartment, filterStatus, currentPage]);
 
   const handleCreateEmployee = async () => {
     try {
@@ -148,13 +179,28 @@ export function HRView() {
   };
 
   const filteredEmployees = employees.filter((employee) => {
-    const fullName = `${employee.first_name} ${employee.last_name}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) || (employee.rol || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = filterDepartment === "Todos" || (employee.rol || "") === filterDepartment;
-    return matchesSearch && matchesDepartment;
+    let matchesAssignment = true;
+    if (filterAssignment === "Con Asignaciones") {
+      matchesAssignment = employee.assignments && employee.assignments.length > 0;
+    } else if (filterAssignment === "Sin Asignaciones") {
+      matchesAssignment = !employee.assignments || employee.assignments.length === 0;
+    }
+
+    let matchesSalary = true;
+    const salary = Number(employee.salary_per_event) || 0;
+    if (salaryRange.min) matchesSalary = matchesSalary && salary >= Number(salaryRange.min);
+    if (salaryRange.max) matchesSalary = matchesSalary && salary <= Number(salaryRange.max);
+
+    return matchesAssignment && matchesSalary;
+  }).sort((a, b) => {
+    if (sortBy === "dateDesc") return new Date(b.created_at) - new Date(a.created_at);
+    if (sortBy === "dateAsc") return new Date(a.created_at) - new Date(b.created_at);
+    if (sortBy === "nameAsc") return (`${a.first_name} ${a.last_name}`).localeCompare(`${b.first_name} ${b.last_name}`);
+    if (sortBy === "nameDesc") return (`${b.first_name} ${b.last_name}`).localeCompare(`${a.first_name} ${a.last_name}`);
+    return 0;
   });
 
-  const upcomingAssignments = employees.flatMap(
+  const upcomingAssignments = allEmployeesForAssignments.flatMap(
     (employee) => (employee.assignments || []).map((assignment) => ({
       ...assignment,
       employeeName: `${employee.first_name} ${employee.last_name}`,
@@ -357,29 +403,6 @@ export function HRView() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar empleado..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 w-[200px] rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
-              />
-            </div>
-            <div className="relative">
-              <select
-                value={filterDepartment}
-                onChange={(e) => setFilterDepartment(e.target.value)}
-                className="h-9 appearance-none rounded-lg border border-input bg-background pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
-              >
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            </div>
             <Button
               onClick={handleExportPDF}
               disabled={isExporting}
@@ -488,12 +511,104 @@ export function HRView() {
       {/* Directory View */}
       {activeTab === "directory" && (
         <>
-          {/* Directory View Content */}          {/* Employees Table */}
-          <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-foreground">
-                Directorio de empleados
-              </CardTitle>
+          {/* Directory View Content */}          <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
+            <CardHeader className="border-b border-border/50 bg-card/40 pb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <CardTitle className="text-lg font-semibold text-foreground">
+                  Directorio de empleados
+                </CardTitle>
+                <div className="flex flex-wrap items-center gap-3 flex-1 md:justify-end">
+                  <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar (nombre, correo, tel)..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-9 w-full rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`h-9 rounded-lg border-border transition-all ${showFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+                  >
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filtros
+                  </Button>
+                </div>
+              </div>
+
+              {showFilters && (
+                <div className="mt-4 p-4 rounded-xl border border-border/50 bg-background/50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 animate-in slide-in-from-top-2 duration-200">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Departamento</Label>
+                    <select
+                      value={filterDepartment}
+                      onChange={(e) => setFilterDepartment(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      {departments.map((dept) => (
+                        <option key={dept} value={dept}>
+                          {dept}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado</Label>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="Todos">Todos</option>
+                      <option value="active">Activos</option>
+                      <option value="inactive">Inactivos</option>
+                      <option value="suspended">Suspendidos</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Asignaciones</Label>
+                    <select
+                      value={filterAssignment}
+                      onChange={(e) => setFilterAssignment(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="Todos">Todos</option>
+                      <option value="Con Asignaciones">Con Asignaciones</option>
+                      <option value="Sin Asignaciones">Libres</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tarifa ($)</Label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type="number" placeholder="Min" 
+                        value={salaryRange.min} onChange={(e) => setSalaryRange({...salaryRange, min: e.target.value})}
+                        className="h-9"
+                      />
+                      <Input 
+                        type="number" placeholder="Max" 
+                        value={salaryRange.max} onChange={(e) => setSalaryRange({...salaryRange, max: e.target.value})}
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ordenar por</Label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="dateDesc">Más Recientes</option>
+                      <option value="dateAsc">Más Antiguos</option>
+                      <option value="nameAsc">Nombre (A-Z)</option>
+                      <option value="nameDesc">Nombre (Z-A)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
@@ -598,6 +713,35 @@ export function HRView() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+              
+              {/* Pagination UI */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/50 bg-card/50">
+                  <span className="text-sm text-muted-foreground font-medium">
+                    Página <strong className="text-foreground">{currentPage}</strong> de {totalPages} ({totalItems} empleados)
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="rounded-lg border-border"
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="rounded-lg border-border"
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

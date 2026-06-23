@@ -169,3 +169,4 @@
 }
 
 
+@media print { body, html { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: white !important; color: black !important; } body::before { display: none !important; } .print\:block, .print\:block * { color: black !important; border-color: black !important; } }

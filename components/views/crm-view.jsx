@@ -14,9 +14,9 @@ import {
   Calendar,
   Clock,
   Download,
-  Loader2,
   AlertTriangle,
-  Award
+  Award,
+  SlidersHorizontal
 } from "lucide-react";
 import { reportService } from "@/lib/services/report.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,15 +31,13 @@ import { toast } from "sonner"; // If you're using sonner, it looks great for no
 const statusColors = {
   Active: "bg-[#6b705c] text-white",
   Inactive: "bg-card/70 text-[#6b705c]",
-  Prospect: "bg-[#d4a574] text-white",
-  VIP: "bg-gradient-to-r from-amber-500 to-orange-400 text-white shadow-lg"
+  Prospect: "bg-[#d4a574] text-white"
 };
 
 const statusLabels = {
   Active: "Activo",
   Inactive: "Inactivo",
-  Prospect: "Prospecto",
-  VIP: "Cliente VIP"
+  Prospect: "Prospecto"
 };
 
 export function CRMView() {
@@ -47,6 +45,8 @@ export function CRMView() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [sortBy, setSortBy] = useState("nameAsc");
+  const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   
   // Paginación
@@ -195,7 +195,6 @@ export function CRMView() {
   };
 
   if (selectedClient) {
-    const isVip = clientEvents.length > 3 || selectedClient.status === "VIP"; // Logica de ejemplo VIP
     const displayName = getClientDisplayName(selectedClient);
 
     return (
@@ -212,13 +211,10 @@ export function CRMView() {
 
         {/* Client Profile Header */}
         <Card className="rounded-2xl border-white/10 bg-card/80 backdrop-blur-md shadow-xl overflow-hidden relative">
-          {isVip && (
-            <div className="absolute top-0 right-0 p-4 bg-gradient-to-bl from-amber-500 to-transparent w-32 h-32 opacity-20 pointer-events-none" />
-          )}
           <CardContent className="p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-6">
-                <div className={`flex h-20 w-20 items-center justify-center rounded-3xl ${isVip ? 'bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/30 shadow-lg' : 'bg-[#1d3557]'} shadow-md`}>
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#1d3557] shadow-md">
                   <span className="text-2xl font-semibold text-white">
                     {selectedClient.name?.charAt(0) || "C"}
                   </span>
@@ -228,8 +224,8 @@ export function CRMView() {
                     <h1 className="text-2xl font-bold text-foreground">
                       {displayName}
                     </h1>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColors[isVip ? 'VIP' : (selectedClient.status || 'Active')]}`}>
-                      {statusLabels[isVip ? 'VIP' : (selectedClient.status || 'Active')] || selectedClient.status || 'Activo'}
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColors[selectedClient.status || 'Active']}`}>
+                      {statusLabels[selectedClient.status || 'Active'] || selectedClient.status || 'Activo'}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -296,12 +292,6 @@ export function CRMView() {
                 <Calendar className="h-5 w-5 text-[#c05c3c]" />
                 Historial de Eventos
               </CardTitle>
-              {isVip && (
-                <div className="flex items-center gap-1 text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full text-xs font-bold">
-                  <Award className="h-4 w-4" />
-                  Cliente Frecuente
-                </div>
-              )}
             </CardHeader>
             <CardContent className="flex-1 p-0 custom-scrollbar overflow-y-auto max-h-[400px]">
               {loadingEvents ? (
@@ -327,7 +317,7 @@ export function CRMView() {
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <Clock className="h-3 w-3" />
                             {ev.status || "Programado"}
-                            {ev.Venue?.name && ` • ${ev.Venue.name}`}
+                            {(ev.Venues && ev.Venues.length > 0) ? ` • ${ev.Venues.map(v => v.name).join(', ')}` : (ev.Venue?.name ? ` • ${ev.Venue.name}` : '')}
                           </p>
                         </div>
                       </div>
@@ -393,28 +383,6 @@ export function CRMView() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 w-[200px] rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
-              />
-            </div>
-            <div className="relative">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="h-9 appearance-none rounded-lg border border-input bg-background pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
-              >
-                <option value="All">Todos</option>
-                <option value="Active">Activos</option>
-                <option value="VIP">VIP</option>
-                <option value="Inactive">Inactivos</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            </div>
             <Button
               onClick={handleExportPDF}
               disabled={isExporting}
@@ -439,7 +407,7 @@ export function CRMView() {
         </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card className="rounded-2xl border border-white/10 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-white/20">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
@@ -468,25 +436,59 @@ export function CRMView() {
             </div>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/10 to-orange-400/5 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-amber-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 shadow-lg shadow-orange-500/20">
-                <Award className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {clients.filter((c) => c.status === "VIP").length || 0}
-                </p>
-                <p className="text-sm text-amber-600/80 dark:text-amber-500/80 font-bold uppercase tracking-wider">Clientes VIP</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Clients Table */}
       <Card className="overflow-hidden rounded-2xl border border-white/10 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
+        <CardHeader className="border-b border-border/50 bg-card/40 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar (nombre, doc, correo)..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 w-full rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`h-9 rounded-lg border-border transition-all ${showFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+            >
+              <SlidersHorizontal className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
+          </div>
+
+          {showFilters && (
+            <div className="mt-4 p-4 rounded-xl border border-border/50 bg-background/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-in slide-in-from-top-2 duration-200">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado</Label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                >
+                  <option value="All">Todos</option>
+                  <option value="Active">Activos</option>
+                  <option value="Inactive">Inactivos</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ordenar por (Página actual)</Label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                >
+                  <option value="nameAsc">Nombre (A-Z)</option>
+                  <option value="nameDesc">Nombre (Z-A)</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </CardHeader>
         <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -519,9 +521,12 @@ export function CRMView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {clients.map((client) => {
+                  {[...clients].sort((a, b) => {
+                    if (sortBy === "nameAsc") return getClientDisplayName(a).localeCompare(getClientDisplayName(b));
+                    if (sortBy === "nameDesc") return getClientDisplayName(b).localeCompare(getClientDisplayName(a));
+                    return 0;
+                  }).map((client) => {
                     const displayName = getClientDisplayName(client);
-                    const isVip = client.status === "VIP";
                     
                     return (
                     <tr
@@ -531,8 +536,8 @@ export function CRMView() {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
-                          <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${isVip ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-orange-500/20' : 'bg-[#1d3557]/10'} border border-white/5 transition-transform group-hover:scale-105`}>
-                            <span className={`text-lg font-bold ${isVip ? 'text-white' : 'text-[#1d3557]'}`}>
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1d3557]/10 border border-white/5 transition-transform group-hover:scale-105">
+                            <span className="text-lg font-bold text-[#1d3557]">
                               {client.name?.charAt(0) || "C"}
                             </span>
                           </div>
