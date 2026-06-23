@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { 
-  Search, Plus, Edit, Trash2, MapPin, Phone, Mail, 
-  User, CheckCircle2, XCircle, Truck, Download, Loader2 
+  User, CheckCircle2, XCircle, Truck, Download, Loader2, SlidersHorizontal, Search, Plus
 } from "lucide-react";
 import { reportService } from "@/lib/services/report.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,11 +17,22 @@ export function ProvidersView() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
+  
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  
+  // Filter State
+  const [filterStatus, setFilterStatus] = useState("Todos");
+  const [sortBy, setSortBy] = useState("nameAsc");
+  const [showFilters, setShowFilters] = useState(false);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -37,9 +47,21 @@ export function ProvidersView() {
   const loadProviders = async () => {
     try {
       setLoading(true);
-      const res = await providerService.getAll();
+      const res = await providerService.getAll({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm,
+        status: filterStatus === "Todos" ? undefined : filterStatus
+      });
       if (!res.error) {
         setProviders(extractList(res.data));
+        if (res.data && res.data.totalPages !== undefined) {
+          setTotalPages(res.data.totalPages);
+          setTotalItems(res.data.total);
+        } else {
+          setTotalPages(1);
+          setTotalItems(extractList(res.data).length);
+        }
       }
     } catch (err) {
       console.error("Failed to load providers:", err);
@@ -58,8 +80,11 @@ export function ProvidersView() {
   };
 
   useEffect(() => {
-    loadProviders();
-  }, []);
+    const timer = setTimeout(() => {
+      loadProviders();
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, filterStatus, currentPage]);
 
   const openAddModal = () => {
     setIsEditing(false);
@@ -129,10 +154,11 @@ export function ProvidersView() {
     }
   };
 
-  const filteredProviders = providers.filter(p => 
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.contact_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProviders = providers.sort((a, b) => {
+    if (sortBy === "nameAsc") return (a.name || "").localeCompare(b.name || "");
+    if (sortBy === "nameDesc") return (b.name || "").localeCompare(a.name || "");
+    return 0;
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 relative">
@@ -155,24 +181,63 @@ export function ProvidersView() {
               <div className="relative flex-1 md:w-auto">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar proveedor..."
+                  placeholder="Buscar proveedor, contacto, tel, correo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 w-full sm:w-[200px] rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
+                  className="h-9 w-full sm:w-[300px] rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
                 />
               </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                className={`h-9 rounded-lg border-border transition-all ${showFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+              >
+                <SlidersHorizontal className="h-4 w-4 mr-2" />
+                Filtros
+              </Button>
               <Button onClick={handleExportPDF} disabled={isExporting} variant="outline" className="h-9 rounded-lg gap-2 border-border hover:bg-muted">
                 {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 {isExporting ? "Generando..." : "Generar PDF"}
               </Button>
               <Button onClick={openAddModal} className="h-9 rounded-lg bg-[#c05c3c] px-4 text-sm text-white shadow-md hover:bg-[#a84d32] transition-all hover:-translate-y-0.5 gap-2 whitespace-nowrap">
                 <Plus className="h-4 w-4" />
-                Nuevo Proveedor
+                Nuevo
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <Card className="glass-panel rounded-2xl animate-in slide-in-from-top-2">
+          <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado</Label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+              >
+                <option value="Todos">Todos</option>
+                <option value="active">Activos</option>
+                <option value="inactive">Inactivos</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ordenar por</Label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+              >
+                <option value="nameAsc">Nombre (A-Z)</option>
+                <option value="nameDesc">Nombre (Z-A)</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Content Grid */}
       {loading ? (
@@ -256,6 +321,35 @@ export function ProvidersView() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/50 mt-6">
+          <span className="text-sm text-muted-foreground font-medium">
+            Página <strong className="text-foreground">{currentPage}</strong> de {totalPages} ({totalItems} proveedores en total)
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="rounded-lg border-border hover:bg-muted/50 transition-all"
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-lg border-border hover:bg-muted/50 transition-all"
+            >
+              Siguiente
+            </Button>
+          </div>
         </div>
       )}
 

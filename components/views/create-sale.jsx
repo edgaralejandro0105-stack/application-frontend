@@ -61,6 +61,9 @@ export function CreateSale({ onNavigate }) {
   });
 
   const watchDiscount = watch("discount", 0);
+  const watchEventId = watch("event_id");
+  const watchPaymentMethod = watch("payment_method");
+  const watchReference = watch("reference");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -183,10 +186,11 @@ export function CreateSale({ onNavigate }) {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 print:bg-white print:p-0">
+    <>
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 print:hidden">
       
       {/* Header - Hides on print */}
-      <div className="flex items-center justify-between gap-4 print:hidden">
+      <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button 
             variant="outline" 
@@ -203,10 +207,10 @@ export function CreateSale({ onNavigate }) {
       </div>
 
       {/* POS Layout Split */}
-      <div className="grid gap-6 lg:grid-cols-12 h-[calc(100vh-12rem)] min-h-[600px] print:block print:h-auto">
+      <div className="grid gap-6 lg:grid-cols-12 h-[calc(100vh-12rem)] min-h-[600px]">
         
         {/* Left Side: Catalog - Hides on print */}
-        <div className="lg:col-span-7 flex flex-col gap-4 h-full print:hidden">
+        <div className="lg:col-span-7 flex flex-col gap-4 h-full">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -257,18 +261,10 @@ export function CreateSale({ onNavigate }) {
         </div>
 
         {/* Right Side: Ticket & Checkout - Expands on print */}
-        <div className="lg:col-span-5 h-full print:w-[80mm] print:mx-auto">
-          <Card className="flex flex-col h-full rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-2xl print:shadow-none print:border-none print:bg-white print:text-black">
+        <div className="lg:col-span-5 h-full">
+          <Card className="flex flex-col h-full rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-2xl">
             
-            {/* Elemento exclusivo para impresión (Cabecera del Recibo) */}
-            <div className="hidden print:block text-center border-b border-dashed border-gray-400 pb-4 mb-4">
-              <h2 className="text-2xl font-bold tracking-tight">LA CASONA</h2>
-              <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">Event Agency</p>
-              <p className="text-xs mt-2">Ticket de Compra</p>
-              <p className="text-xs">{new Date().toLocaleString()}</p>
-            </div>
-
-            <CardHeader className="border-b border-border/50 pb-4 print:hidden">
+            <CardHeader className="border-b border-border/50 pb-4">
               <CardTitle className="flex items-center justify-between gap-2 text-xl font-bold">
                 <div className="flex items-center gap-2">
                   <Receipt className="h-5 w-5 text-[#c05c3c]" />
@@ -280,28 +276,28 @@ export function CreateSale({ onNavigate }) {
               </CardTitle>
             </CardHeader>
             
-            <CardContent className="flex-1 overflow-y-auto p-4 custom-scrollbar print:overflow-visible print:p-0">
+            <CardContent className="flex-1 overflow-y-auto p-4 custom-scrollbar">
               {ticketItems.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center text-muted-foreground/50 print:hidden">
+                <div className="flex h-full flex-col items-center justify-center text-muted-foreground/50">
                   <ShoppingCart className="h-16 w-16 mb-4 opacity-20" />
                   <p>El ticket está vacío</p>
                 </div>
               ) : (
                 <div className="space-y-3 print:space-y-1">
                   {ticketItems.map(item => (
-                    <div key={item.product_id} className="flex flex-col gap-2 rounded-xl bg-background/50 p-3 border border-border/50 print:border-none print:bg-transparent print:p-1 print:border-b print:border-dashed print:border-gray-200 print:rounded-none">
+                    <div key={item.product_id} className="flex flex-col gap-2 rounded-xl bg-background/50 p-3 border border-border/50">
                       <div className="flex justify-between items-start">
-                        <span className="font-medium text-sm line-clamp-1 print:text-black">{item.name}</span>
+                        <span className="font-medium text-sm line-clamp-1">{item.name}</span>
                         <button 
                           onClick={() => removeItem(item.product_id)}
-                          className="text-red-500 hover:bg-red-500/10 p-1 rounded transition-colors print:hidden"
+                          className="text-red-500 hover:bg-red-500/10 p-1 rounded transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                       
                       <div className="flex items-center justify-between mt-1">
-                        <div className="flex items-center gap-2 print:hidden">
+                        <div className="flex items-center gap-2">
                           <button 
                             onClick={() => updateQuantity(item.product_id, -1)}
                             className="h-7 w-7 flex items-center justify-center rounded-lg bg-muted hover:bg-muted-foreground/20 transition-colors"
@@ -317,12 +313,7 @@ export function CreateSale({ onNavigate }) {
                           </button>
                         </div>
                         
-                        {/* Texto exclusivo impresión */}
-                        <div className="hidden print:block text-sm">
-                          {item.quantity}x @ ${item.unit_price}
-                        </div>
-
-                        <div className="flex items-center gap-2 print:hidden">
+                        <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">$</span>
                           <Input 
                             type="number"
@@ -333,10 +324,6 @@ export function CreateSale({ onNavigate }) {
                             className="h-8 w-20 text-right font-semibold rounded-lg bg-background"
                           />
                         </div>
-                        
-                        <div className="hidden print:block font-bold">
-                          ${(item.quantity * item.unit_price).toFixed(2)}
-                        </div>
                       </div>
                     </div>
                   ))}
@@ -344,11 +331,11 @@ export function CreateSale({ onNavigate }) {
               )}
             </CardContent>
 
-            <CardFooter className="flex-col gap-4 border-t border-border/50 p-4 bg-muted/10 print:bg-transparent print:border-dashed print:border-gray-400 print:mt-4 print:p-0 print:pt-4">
+            <CardFooter className="flex-col gap-4 border-t border-border/50 p-4 bg-muted/10">
               
               {/* Resumen */}
               <div className="w-full space-y-2">
-                <div className="flex justify-between w-full items-center text-sm text-muted-foreground print:text-black">
+                <div className="flex justify-between w-full items-center text-sm text-muted-foreground">
                   <span>Subtotal:</span>
                   <span>${calculateSubtotal().toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
@@ -358,16 +345,16 @@ export function CreateSale({ onNavigate }) {
                     <span>-${Number(watchDiscount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   </div>
                 )}
-                <div className="flex justify-between w-full items-center pt-2 border-t border-border/50 print:border-dashed print:border-gray-300">
-                  <span className="text-muted-foreground font-bold print:text-black">TOTAL:</span>
-                  <span className="text-3xl font-bold text-foreground print:text-black print:text-2xl">
+                <div className="flex justify-between w-full items-center pt-2 border-t border-border/50">
+                  <span className="text-muted-foreground font-bold">TOTAL:</span>
+                  <span className="text-3xl font-bold text-foreground">
                     ${calculateTotal().toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
-              {/* Checkout Form - Hides on print */}
-              <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-4 mt-2 print:hidden">
+              {/* Checkout Form */}
+              <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-4 mt-2">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5 col-span-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Evento Asociado</Label>
@@ -434,17 +421,93 @@ export function CreateSale({ onNavigate }) {
                   {isProcessing ? "Procesando..." : "Cobrar Total"}
                 </Button>
               </form>
-              
-              {/* Footer de ticket para impresión */}
-              <div className="hidden print:block text-center text-xs mt-6 border-t border-dashed border-gray-400 pt-4">
-                <p>¡Gracias por su compra!</p>
-                <p className="mt-1 text-gray-500">Documento sin validez fiscal</p>
-              </div>
 
             </CardFooter>
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* DEDICATED PRINT RECEIPT UI */}
+      <div className="hidden print:block w-[80mm] mx-auto bg-white p-4 font-mono text-sm" style={{ color: '#000000' }}>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold mb-1" style={{ color: '#000000' }}>LA CASONA</h1>
+          <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: '#000000' }}>Event Agency</p>
+          <p className="text-xs" style={{ color: '#000000' }}>RIF: J-12345678-9</p>
+          <p className="text-xs" style={{ color: '#000000' }}>Av. Principal, Local 1</p>
+          <p className="text-xs" style={{ color: '#000000' }}>Tel: +58 412-1234567</p>
+          <div className="border-b border-dashed border-black my-4"></div>
+          <p className="text-sm font-bold" style={{ color: '#000000' }}>TICKET DE COMPRA</p>
+          <p className="text-xs" style={{ color: '#000000' }}>{new Date().toLocaleString()}</p>
+        </div>
+
+        <div className="mb-4 text-xs space-y-1">
+          <p style={{ color: '#000000' }}><span className="font-bold">Cliente:</span> {
+            (() => {
+              if (!watchEventId) return "Consumidor Final";
+              const ev = events.find(e => String(e.event_id || e.id) === watchEventId);
+              if (!ev) return "Consumidor Final";
+              const clientName = ev.Client ? `${ev.Client.first_name || ''} ${ev.Client.last_name || ''}`.trim() : 'Cliente';
+              const date = ev.start_date ? new Date(ev.start_date).toLocaleDateString() : '';
+              const fallbackName = `${ev.type_event || 'Evento'} - ${clientName} ${date ? `(${date})` : ''}`.trim();
+              return ev.title || ev.name || fallbackName;
+            })()
+          }</p>
+          <p style={{ color: '#000000' }}><span className="font-bold">Atendido por:</span> {user?.first_name || "Cajero"} {user?.last_name || ""}</p>
+        </div>
+
+        <div className="border-b border-dashed border-black mb-2"></div>
+        
+        <table className="w-full text-xs mb-2">
+          <thead>
+            <tr className="text-left font-bold border-b border-black" style={{ color: '#000000' }}>
+              <th className="pb-1 w-12 text-center">CANT</th>
+              <th className="pb-1 pl-2">DESCRIPCIÓN</th>
+              <th className="pb-1 text-right">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/20">
+            {ticketItems.map(item => (
+              <tr key={item.product_id} className="align-top" style={{ color: '#000000' }}>
+                <td className="py-2 text-center font-bold">{item.quantity}</td>
+                <td className="py-2 px-2">
+                  <div className="font-bold">{item.name}</div>
+                  <div className="text-[10px]">${Number(item.unit_price).toFixed(2)} c/u</div>
+                </td>
+                <td className="py-2 text-right font-bold">${(item.quantity * item.unit_price).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="border-t border-dashed border-black pt-3 mb-4 space-y-1">
+          <div className="flex justify-between text-xs" style={{ color: '#000000' }}>
+            <span>Subtotal:</span>
+            <span>${calculateSubtotal().toFixed(2)}</span>
+          </div>
+          {Number(watchDiscount) > 0 && (
+            <div className="flex justify-between text-xs font-bold" style={{ color: '#000000' }}>
+              <span>Descuento:</span>
+              <span>-${Number(watchDiscount).toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold text-base mt-2 pt-2 border-t border-black" style={{ color: '#000000' }}>
+            <span>TOTAL:</span>
+            <span>${calculateTotal().toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="text-xs space-y-1 mb-6 p-2 rounded-lg border border-black">
+          <p style={{ color: '#000000' }}><span className="font-bold">Método de Pago:</span> {watchPaymentMethod || "Efectivo"}</p>
+          {watchReference && <p style={{ color: '#000000' }}><span className="font-bold">Ref:</span> {watchReference}</p>}
+        </div>
+
+        <div className="text-center text-xs mt-8 space-y-1">
+          <p className="font-bold uppercase text-sm" style={{ color: '#000000' }}>¡Gracias por su compra!</p>
+          <p style={{ color: '#000000' }}>Documento sin validez fiscal</p>
+          <p className="mt-2 text-[10px]" style={{ color: '#000000' }}>Sistema La Casona ERP</p>
+        </div>
+      </div>
+    </>
   );
 }

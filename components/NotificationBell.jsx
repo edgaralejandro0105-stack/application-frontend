@@ -75,28 +75,35 @@ export function NotificationBell({ onNavigate }) {
       setSocketStatus(reason === 'io server disconnect' ? 'disconnected' : 'error');
     });
 
-    socket.on('new_reservation', (data) => {
-      let dateStr = 'fecha por confirmar';
-      if (data?.event_date) {
-        const parts = data.event_date.split('-');
-        if (parts.length === 3) {
-          dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        } else {
-          dateStr = new Date(data.event_date).toLocaleDateString();
+      socket.on('new_reservation', (data) => {
+        let dateStr = 'fecha por confirmar';
+        if (data?.event_date) {
+          const parts = data.event_date.split('-');
+          if (parts.length === 3) {
+            dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          } else {
+            dateStr = new Date(data.event_date).toLocaleDateString();
+          }
         }
-      }
-      
-      const newNotif = {
-        id: data?.id || Date.now(),
-        type: 'reservation',
-        title: 'Nueva Pre-reserva',
-        message: `Evento programado para ${dateStr}`,
-        date: new Date(),
-        read: false
-      };
+        
+        const newNotif = {
+          id: data?.id || Date.now(),
+          type: 'reservation',
+          title: 'Nueva Pre-reserva',
+          message: `Evento programado para ${dateStr}`,
+          date: new Date(),
+          read: false
+        };
 
-      setNotifications(prev => [newNotif, ...prev]);
-    });
+        setNotifications(prev => [newNotif, ...prev]);
+
+        // Persistir la notificación en el backend para que sobreviva a recargas
+        apiClient.post('/notifications', {
+          title: 'Nueva Pre-reserva',
+          message: `Evento programado para ${dateStr}`,
+          type: 'reservation'
+        });
+      });
 
     socket.on('new_notification', (data) => {
       setNotifications(prev => {

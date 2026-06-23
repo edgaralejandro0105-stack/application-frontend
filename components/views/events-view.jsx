@@ -20,7 +20,10 @@ import {
   Briefcase,
   UserPlus,
   Pencil,
-  Trash2
+  Trash2,
+  SlidersHorizontal,
+  Search,
+  Filter
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,7 +68,6 @@ const monthNames = [
 // Zod Schema ajustado
 const eventSchema = z.object({
   client_id: z.string().min(1, "Debe seleccionar un cliente"),
-  venue_id: z.string().min(1, "Debe seleccionar un salón"),
   type_event: z.string().min(1, "El tipo de evento es obligatorio").max(20),
   start_date: z.string().min(1, "La fecha de inicio es obligatoria"),
   end_date: z.string().min(1, "La fecha de fin es obligatoria"),
@@ -94,10 +96,19 @@ export function EventsView() {
   // States extras restaurados
   const [selectedServices, setSelectedServices] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState([]);
+  const [selectedVenues, setSelectedVenues] = useState([]);
 
   // Vistas de Calendario
   const [viewMode, setViewMode] = useState("calendar");
   const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1)); // Fecha restaurada para coincidir con la UI anterior si es necesario
+
+  // For List view filtering
+  const [listSearchTerm, setListSearchTerm] = useState("");
+  const [filterListStatus, setFilterListStatus] = useState("All");
+  const [filterListType, setFilterListType] = useState("All");
+  const [filterListVenue, setFilterListVenue] = useState("All");
+  const [sortBy, setSortBy] = useState("dateDesc");
+  const [showListFilters, setShowListFilters] = useState(false);
 
   const {
     register,
@@ -110,7 +121,6 @@ export function EventsView() {
     resolver: zodResolver(eventSchema),
     defaultValues: {
       client_id: "",
-      venue_id: "",
       type_event: "",
       start_date: "",
       end_date: "",
@@ -120,17 +130,15 @@ export function EventsView() {
     }
   });
 
-  const watchVenueId = watch("venue_id");
-
   const loadData = async () => {
     try {
       setLoading(true);
       const [eventsRes, clientsRes, venuesRes, servicesRes, staffRes] = await Promise.all([
-        eventService.getAll(),
-        clientService.getAll(),
-        venueService.getAll(),
-        serviceExternalService.getAll(),
-        employeeService.getAll()
+        eventService.getAll({ limit: 10000 }),
+        clientService.getAll({ limit: 10000 }),
+        venueService.getAll({ limit: 10000 }),
+        serviceExternalService.getAll({ limit: 10000 }),
+        employeeService.getAll({ limit: 10000 })
       ]);
 
       if (!eventsRes.error) setEvents(extractList(eventsRes.data));
@@ -224,7 +232,6 @@ export function EventsView() {
     setEditingEvent(null);
     reset({
       client_id: "",
-      venue_id: "",
       type_event: "",
       start_date: "",
       end_date: "",
@@ -235,6 +242,7 @@ export function EventsView() {
     setWizardStep(1);
     setSelectedServices([]);
     setSelectedStaff([]);
+    setSelectedVenues([]);
     setModalOpen(true);
   };
 
@@ -242,7 +250,6 @@ export function EventsView() {
     setEditingEvent(event);
     reset({
       client_id: String(event.client_id || event.Client?.client_id || ""),
-      venue_id: String(event.venue_id || event.Venue?.venue_id || ""),
       type_event: event.type_event || "",
       start_date: formatDateForInput(event.start_date || event.date),
       end_date: formatDateForInput(event.end_date || event.date),
@@ -252,6 +259,12 @@ export function EventsView() {
     });
     setWizardStep(1);
     
+    // Parsear salones asignados
+    const eventVenues = event.Venues && event.Venues.length > 0 
+      ? event.Venues.map(v => v.venue_id) 
+      : (event.venue_id ? [event.venue_id] : []);
+    setSelectedVenues(eventVenues);
+
     // Parsear servicios asignados
     const eventServices = event.EventItems ? event.EventItems.map(item => item.service_id) : [];
     setSelectedServices(eventServices);
@@ -269,6 +282,7 @@ export function EventsView() {
     setEditingEvent(null);
     setSelectedServices([]);
     setSelectedStaff([]);
+    setSelectedVenues([]);
     reset();
   };
 
@@ -286,9 +300,15 @@ export function EventsView() {
     const startDateStr = `${data.start_date} ${data.time || "00:00"}:00`;
     const endDateStr = `${data.end_date} ${data.time || "23:59"}:00`;
 
+    if (selectedVenues.length === 0) {
+      toast.error("Debe seleccionar al menos un salón");
+      setIsProcessing(false);
+      return;
+    }
+
     const payload = {
       client_id: Number(data.client_id),
-      venue_id: Number(data.venue_id),
+      venue_ids: selectedVenues,
       type_event: data.type_event,
       start_date: startDateStr,
       end_date: endDateStr,
@@ -608,14 +628,120 @@ export function EventsView() {
       {/* List View */}
       {!loading && viewMode === "list" && (
         <div className="grid gap-4">
-          {events.length === 0 ? (
-            <Card className="flex flex-col items-center justify-center p-12 bg-card/40 backdrop-blur-sm border-white/10">
-              <CalendarIcon className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground font-medium text-lg">No hay eventos registrados</p>
-              <Button onClick={openCreateModal} className="mt-4 bg-[#c05c3c] hover:bg-[#a84d32] text-white rounded-xl">Crear tu primer evento</Button>
+          <div className="flex flex-col md:flex-row gap-4 mb-2 items-center justify-between bg-card/60 p-4 rounded-2xl border border-white/10 shadow-sm">
+            <div className="relative flex-1 w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar evento o cliente..."
+                value={listSearchTerm}
+                onChange={(e) => setListSearchTerm(e.target.value)}
+                className="h-9 w-full rounded-lg border-input pl-9 text-sm focus:ring-2 focus:ring-[#c05c3c]"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowListFilters(!showListFilters)}
+              className={`h-9 rounded-lg border-border transition-all ${showListFilters ? 'bg-[#1d3557] text-white border-[#1d3557]' : 'hover:bg-muted/50'}`}
+            >
+              <SlidersHorizontal className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
+          </div>
+
+          {showListFilters && (
+            <Card className="glass-panel rounded-2xl animate-in slide-in-from-top-2 mb-4">
+              <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado</Label>
+                  <select
+                    value={filterListStatus}
+                    onChange={(e) => setFilterListStatus(e.target.value)}
+                    className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                  >
+                    <option value="All">Todos</option>
+                    {Object.entries(statusLabels).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipo</Label>
+                  <select
+                    value={filterListType}
+                    onChange={(e) => setFilterListType(e.target.value)}
+                    className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                  >
+                    <option value="All">Todos</option>
+                    {eventTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Salón</Label>
+                  <select
+                    value={filterListVenue}
+                    onChange={(e) => setFilterListVenue(e.target.value)}
+                    className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                  >
+                    <option value="All">Todos</option>
+                    {venues.map(v => (
+                      <option key={v.venue_id || v.id} value={String(v.venue_id || v.id)}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ordenar por</Label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                  >
+                    <option value="dateDesc">Más Recientes</option>
+                    <option value="dateAsc">Más Antiguos</option>
+                    <option value="nameAsc">Nombre (A-Z)</option>
+                  </select>
+                </div>
+              </CardContent>
             </Card>
-          ) : (
-            events.map((event) => {
+          )}
+
+          {(() => {
+            const filteredEvents = events.filter((event) => {
+              const eName = getEventName(event).toLowerCase();
+              const cName = event.Client?.name ? `${event.Client.name} ${event.Client.last_name || ''}`.toLowerCase() : "";
+              const term = listSearchTerm.toLowerCase();
+
+              const matchesSearch = eName.includes(term) || cName.includes(term);
+              const matchesStatus = filterListStatus === "All" || event.status === filterListStatus;
+              const matchesType = filterListType === "All" || event.type_event === filterListType;
+              
+              let matchesVenue = true;
+              if (filterListVenue !== "All") {
+                 matchesVenue = String(event.venue_id || event.Venue?.venue_id) === filterListVenue;
+              }
+
+              return matchesSearch && matchesStatus && matchesType && matchesVenue;
+            }).sort((a, b) => {
+              const dateA = new Date(a.start_date || a.date).getTime();
+              const dateB = new Date(b.start_date || b.date).getTime();
+              if (sortBy === "dateDesc") return dateB - dateA;
+              if (sortBy === "dateAsc") return dateA - dateB;
+              if (sortBy === "nameAsc") return getEventName(a).localeCompare(getEventName(b));
+              return 0;
+            });
+
+            if (filteredEvents.length === 0) {
+              return (
+                <Card className="flex flex-col items-center justify-center p-12 bg-card/40 backdrop-blur-sm border-white/10">
+                  <CalendarIcon className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                  <p className="text-muted-foreground font-medium text-lg">No se encontraron eventos</p>
+                  <Button onClick={openCreateModal} className="mt-4 bg-[#c05c3c] hover:bg-[#a84d32] text-white rounded-xl">Crear nuevo evento</Button>
+                </Card>
+              );
+            }
+
+            return filteredEvents.map((event) => {
               const eName = getEventName(event);
               const startDate = new Date(event.start_date || event.date);
               const timeDisplay = event.time || (startDate.getTime() ? startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : "00:00");
@@ -648,7 +774,7 @@ export function EventsView() {
                             </span>
                             <span className="flex items-center gap-1.5 font-medium">
                               <MapPin className="h-4 w-4" />
-                              {event.Venue?.name || event.venue || "Sin salón"}
+                              {event.Venues && event.Venues.length > 0 ? event.Venues.map(v => v.name).join(', ') : (event.Venue?.name || event.venue || "Sin salón")}
                             </span>
                             <span className="flex items-center gap-1.5 font-medium">
                               <Clock className="h-4 w-4" />
@@ -693,8 +819,8 @@ export function EventsView() {
                   </CardContent>
                 </Card>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       )}
       </div>
@@ -835,16 +961,20 @@ export function EventsView() {
                 {/* Step 2: Venue */}
                 {wizardStep === 2 && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                    <Label className="text-sm font-bold text-foreground">Seleccionar Salón (Venue)</Label>
-                    {errors.venue_id && <p className="text-xs text-red-500 mb-2">{errors.venue_id.message}</p>}
+                    <Label className="text-sm font-bold text-foreground">Seleccionar Salones (Venues)</Label>
                     
                     <div className="grid gap-4 sm:grid-cols-2 max-h-[300px] overflow-y-auto custom-scrollbar p-1">
                       {venues.map((venue) => {
-                        const isSelected = watchVenueId === String(venue.venue_id || venue.id);
+                        const vId = Number(venue.venue_id || venue.id);
+                        const isSelected = selectedVenues.includes(vId) || selectedVenues.includes(String(vId));
                         return (
                           <div
-                            key={venue.venue_id || venue.id}
-                            onClick={() => setValue("venue_id", String(venue.venue_id || venue.id), { shouldValidate: true })}
+                            key={vId}
+                            onClick={() => {
+                               setSelectedVenues(prev => prev.includes(vId) || prev.includes(String(vId)) 
+                                  ? prev.filter(id => Number(id) !== vId) 
+                                  : [...prev, vId]);
+                            }}
                             className={`cursor-pointer flex items-start gap-4 rounded-xl border-2 p-4 text-left transition-all duration-200 ${isSelected ? 'border-[#c05c3c] bg-[#c05c3c]/5 shadow-md shadow-[#c05c3c]/10' : 'border-border/50 hover:border-[#c05c3c]/50 bg-card/50'}`}
                           >
                             <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${isSelected ? 'bg-[#c05c3c] text-white' : 'bg-muted text-muted-foreground'}`}>
