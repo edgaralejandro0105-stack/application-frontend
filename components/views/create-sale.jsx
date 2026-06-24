@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -42,6 +42,7 @@ export function CreateSale({ onNavigate }) {
   // POS State
   const [ticketItems, setTicketItems] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const lastPrintData = useRef(null);
 
   // React Hook Form
   const {
@@ -170,6 +171,16 @@ export function CreateSale({ onNavigate }) {
       const res = await saleService.create(payload);
       if (res.error) throw new Error(res.error);
       
+      lastPrintData.current = {
+        items: [...ticketItems],
+        discount: Number(watchDiscount) || 0,
+        paymentMethod: watchPaymentMethod,
+        reference: watchReference,
+        eventId: watchEventId,
+        events: events,
+        user: user,
+      };
+
       toast.success("Venta registrada exitosamente", {
         action: {
           label: 'Imprimir Recibo',
@@ -428,86 +439,119 @@ export function CreateSale({ onNavigate }) {
       </div>
       </div>
 
+      <style>{`@media print { [data-sonner-toaster] { display: none !important; } }`}</style>
+
       {/* DEDICATED PRINT RECEIPT UI */}
-      <div className="hidden print:block w-[80mm] mx-auto bg-white p-4 font-mono text-sm" style={{ color: '#000000' }}>
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-1" style={{ color: '#000000' }}>LA CASONA</h1>
-          <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: '#000000' }}>Event Agency</p>
-          <p className="text-xs" style={{ color: '#000000' }}>RIF: J-12345678-9</p>
-          <p className="text-xs" style={{ color: '#000000' }}>Av. Principal, Local 1</p>
-          <p className="text-xs" style={{ color: '#000000' }}>Tel: +58 412-1234567</p>
-          <div className="border-b border-dashed border-black my-4"></div>
-          <p className="text-sm font-bold" style={{ color: '#000000' }}>TICKET DE COMPRA</p>
-          <p className="text-xs" style={{ color: '#000000' }}>{new Date().toLocaleString()}</p>
-        </div>
+      {(() => {
+        const printSrc = ticketItems.length > 0
+          ? {
+              items: ticketItems,
+              discount: Number(watchDiscount) || 0,
+              paymentMethod: watchPaymentMethod,
+              reference: watchReference,
+              eventId: watchEventId,
+              events: events,
+              userName: user?.first_name || "Cajero",
+              userLastName: user?.last_name || "",
+            }
+          : lastPrintData.current;
 
-        <div className="mb-4 text-xs space-y-1">
-          <p style={{ color: '#000000' }}><span className="font-bold">Cliente:</span> {
-            (() => {
-              if (!watchEventId) return "Consumidor Final";
-              const ev = events.find(e => String(e.event_id || e.id) === watchEventId);
-              if (!ev) return "Consumidor Final";
-              const clientName = ev.Client ? `${ev.Client.first_name || ''} ${ev.Client.last_name || ''}`.trim() : 'Cliente';
-              const date = ev.start_date ? new Date(ev.start_date).toLocaleDateString() : '';
-              const fallbackName = `${ev.type_event || 'Evento'} - ${clientName} ${date ? `(${date})` : ''}`.trim();
-              return ev.title || ev.name || fallbackName;
-            })()
-          }</p>
-          <p style={{ color: '#000000' }}><span className="font-bold">Atendido por:</span> {user?.first_name || "Cajero"} {user?.last_name || ""}</p>
-        </div>
+        if (!printSrc || !printSrc.items) return null;
 
-        <div className="border-b border-dashed border-black mb-2"></div>
-        
-        <table className="w-full text-xs mb-2">
-          <thead>
-            <tr className="text-left font-bold border-b border-black" style={{ color: '#000000' }}>
-              <th className="pb-1 w-12 text-center">CANT</th>
-              <th className="pb-1 pl-2">DESCRIPCIÓN</th>
-              <th className="pb-1 text-right">TOTAL</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black/20">
-            {ticketItems.map(item => (
-              <tr key={item.product_id} className="align-top" style={{ color: '#000000' }}>
-                <td className="py-2 text-center font-bold">{item.quantity}</td>
-                <td className="py-2 px-2">
-                  <div className="font-bold">{item.name}</div>
-                  <div className="text-[10px]">${Number(item.unit_price).toFixed(2)} c/u</div>
-                </td>
-                <td className="py-2 text-right font-bold">${(item.quantity * item.unit_price).toFixed(2)}</td>
+        const printItems = printSrc.items;
+        const printDiscount = printSrc.discount;
+        const printPaymentMethod = printSrc.paymentMethod;
+        const printReference = printSrc.reference;
+        const printEventId = printSrc.eventId;
+        const printEvents = printSrc.events;
+        const printUserName = printSrc.userName;
+        const printUserLastName = printSrc.userLastName;
+
+        const printSubtotal = printItems.reduce((t, item) => t + (item.quantity * item.unit_price), 0);
+        const printTotal = Math.max(0, printSubtotal - printDiscount);
+
+        const getClientName = () => {
+          if (!printEventId) return "Consumidor Final";
+          const ev = (printEvents || []).find(e => String(e.event_id || e.id) === printEventId);
+          if (!ev) return "Consumidor Final";
+          const clientName = ev.Client ? `${ev.Client.first_name || ''} ${ev.Client.last_name || ''}`.trim() : 'Cliente';
+          const date = ev.start_date ? new Date(ev.start_date).toLocaleDateString() : '';
+          const fallbackName = `${ev.type_event || 'Evento'} - ${clientName} ${date ? `(${date})` : ''}`.trim();
+          return ev.title || ev.name || fallbackName;
+        };
+
+        return (
+        <div className="hidden print:block w-[80mm] mx-auto bg-white p-4 font-mono text-sm" style={{ color: '#000000' }}>
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold mb-1" style={{ color: '#000000' }}>LA CASONA</h1>
+            <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: '#000000' }}>Event Agency</p>
+            <p className="text-xs" style={{ color: '#000000' }}>RIF: J-9246907-3</p>
+            <p className="text-xs" style={{ color: '#000000' }}>Capacho Nuevo, El Ñampo</p>
+            <p className="text-xs" style={{ color: '#000000' }}>Tel: +58 414-3768876</p>
+            <div className="border-b border-dashed border-black my-4"></div>
+            <p className="text-sm font-bold" style={{ color: '#000000' }}>TICKET DE COMPRA</p>
+            <p className="text-xs" style={{ color: '#000000' }}>{new Date().toLocaleString()}</p>
+          </div>
+
+          <div className="mb-4 text-xs space-y-1">
+            <p style={{ color: '#000000' }}><span className="font-bold">Cliente:</span> {getClientName()}</p>
+            <p style={{ color: '#000000' }}><span className="font-bold">Atendido por:</span> {printUserName} {printUserLastName}</p>
+          </div>
+
+          <div className="border-b border-dashed border-black mb-2"></div>
+          
+          <table className="w-full text-xs mb-2">
+            <thead>
+              <tr className="text-left font-bold border-b border-black" style={{ color: '#000000' }}>
+                <th className="pb-1 w-12 text-center">CANT</th>
+                <th className="pb-1 pl-2">DESCRIPCIÓN</th>
+                <th className="pb-1 text-right">TOTAL</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-black/20">
+              {printItems.map((item, idx) => (
+                <tr key={item.product_id || idx} className="align-top" style={{ color: '#000000' }}>
+                  <td className="py-2 text-center font-bold">{item.quantity}</td>
+                  <td className="py-2 px-2">
+                    <div className="font-bold">{item.name}</div>
+                    <div className="text-[10px]">${Number(item.unit_price).toFixed(2)} c/u</div>
+                  </td>
+                  <td className="py-2 text-right font-bold">${(item.quantity * item.unit_price).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        <div className="border-t border-dashed border-black pt-3 mb-4 space-y-1">
-          <div className="flex justify-between text-xs" style={{ color: '#000000' }}>
-            <span>Subtotal:</span>
-            <span>${calculateSubtotal().toFixed(2)}</span>
-          </div>
-          {Number(watchDiscount) > 0 && (
-            <div className="flex justify-between text-xs font-bold" style={{ color: '#000000' }}>
-              <span>Descuento:</span>
-              <span>-${Number(watchDiscount).toFixed(2)}</span>
+          <div className="border-t border-dashed border-black pt-3 mb-4 space-y-1">
+            <div className="flex justify-between text-xs" style={{ color: '#000000' }}>
+              <span>Subtotal:</span>
+              <span>${printSubtotal.toFixed(2)}</span>
             </div>
-          )}
-          <div className="flex justify-between font-bold text-base mt-2 pt-2 border-t border-black" style={{ color: '#000000' }}>
-            <span>TOTAL:</span>
-            <span>${calculateTotal().toFixed(2)}</span>
+            {printDiscount > 0 && (
+              <div className="flex justify-between text-xs font-bold" style={{ color: '#000000' }}>
+                <span>Descuento:</span>
+                <span>-${printDiscount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-base mt-2 pt-2 border-t border-black" style={{ color: '#000000' }}>
+              <span>TOTAL:</span>
+              <span>${printTotal.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div className="text-xs space-y-1 mb-6 p-2 rounded-lg border border-black">
+            <p style={{ color: '#000000' }}><span className="font-bold">Método de Pago:</span> {printPaymentMethod || "Efectivo"}</p>
+            {printReference && <p style={{ color: '#000000' }}><span className="font-bold">Ref:</span> {printReference}</p>}
+          </div>
+
+          <div className="text-center text-xs mt-8 space-y-1">
+            <p className="font-bold uppercase text-sm" style={{ color: '#000000' }}>¡Gracias por su compra!</p>
+            <p style={{ color: '#000000' }}>Documento sin validez fiscal</p>
+            <p className="mt-2 text-[10px]" style={{ color: '#000000' }}>Sistema La Casona ERP</p>
           </div>
         </div>
-
-        <div className="text-xs space-y-1 mb-6 p-2 rounded-lg border border-black">
-          <p style={{ color: '#000000' }}><span className="font-bold">Método de Pago:</span> {watchPaymentMethod || "Efectivo"}</p>
-          {watchReference && <p style={{ color: '#000000' }}><span className="font-bold">Ref:</span> {watchReference}</p>}
-        </div>
-
-        <div className="text-center text-xs mt-8 space-y-1">
-          <p className="font-bold uppercase text-sm" style={{ color: '#000000' }}>¡Gracias por su compra!</p>
-          <p style={{ color: '#000000' }}>Documento sin validez fiscal</p>
-          <p className="mt-2 text-[10px]" style={{ color: '#000000' }}>Sistema La Casona ERP</p>
-        </div>
-      </div>
+        );
+      })()}
     </>
   );
 }
