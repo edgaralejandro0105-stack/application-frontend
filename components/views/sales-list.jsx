@@ -11,15 +11,18 @@ import {
   TrendingUp,
   Download,
   Loader2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Eye
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { saleService } from "@/lib/services/sale.service";
 import { reportService } from "@/lib/services/report.service";
 import { extractList } from "@/lib/api-client";
+import { toast } from "sonner";
 import {
   LineChart,
   Line,
@@ -45,6 +48,9 @@ export function SalesList({ onNavigate }) {
   const [sortBy, setSortBy] = useState("dateDesc");
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedSaleDetails, setSelectedSaleDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -153,6 +159,22 @@ export function SalesList({ onNavigate }) {
     return sales.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0);
   }, [sales]);
 
+  const handleViewDetail = async (saleId) => {
+    try {
+      setLoadingDetails(true);
+      setShowDetailModal(true);
+      const res = await saleService.getById(saleId);
+      if (res.error) throw new Error(res.error);
+      setSelectedSaleDetails(res.data);
+    } catch (err) {
+      setSelectedSaleDetails(null);
+      setShowDetailModal(false);
+      toast.error("Error al cargar detalle de la venta");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   const handleExportPDF = async () => {
     try {
       setIsExporting(true);
@@ -163,6 +185,7 @@ export function SalesList({ onNavigate }) {
   };
 
   return (
+    <>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -431,6 +454,7 @@ export function SalesList({ onNavigate }) {
                     <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Fecha</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Evento / Concepto</th>
                     <th className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Total</th>
+                    <th className="px-6 py-4 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
@@ -468,6 +492,17 @@ export function SalesList({ onNavigate }) {
                           ${Number(sale.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
                       </td>
+                      <td className="px-6 py-4 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetail(sale.sale_id)}
+                          className="rounded-xl hover:bg-[#1d3557]/10 hover:text-[#1d3557] transition-all"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Detalle
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -477,5 +512,78 @@ export function SalesList({ onNavigate }) {
         </CardContent>
       </Card>
     </div>
+
+      {/* Detail Modal */}
+      <Dialog open={showDetailModal} onOpenChange={(open) => { if (!open) { setShowDetailModal(false); setSelectedSaleDetails(null); } }}>
+        <DialogContent className="sm:max-w-2xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground">
+              {selectedSaleDetails ? `Detalle de Venta #${String(selectedSaleDetails.sale_id).padStart(5, '0')}` : 'Cargando...'}
+            </DialogTitle>
+            <DialogDescription>
+              Productos incluidos en esta transacción
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingDetails ? (
+            <div className="flex items-center justify-center min-h-[200px]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1d3557]"></div>
+            </div>
+          ) : selectedSaleDetails ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm bg-muted/30 rounded-xl p-4">
+                <div>
+                  <span className="text-muted-foreground">Fecha:</span>
+                  <p className="font-semibold">{new Date(selectedSaleDetails.create_at || selectedSaleDetails.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total:</span>
+                  <p className="font-semibold text-lg">${Number(selectedSaleDetails.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 font-semibold text-muted-foreground">Producto</th>
+                      <th className="text-center py-2 font-semibold text-muted-foreground">Cant.</th>
+                      <th className="text-right py-2 font-semibold text-muted-foreground">Precio</th>
+                      <th className="text-right py-2 font-semibold text-muted-foreground">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {(selectedSaleDetails.SaleDetails || selectedSaleDetails.sale_details || []).map((detail, idx) => {
+                      const unitPrice = detail.subtotal / detail.quantity;
+                      return (
+                        <tr key={detail.detail_id || idx}>
+                          <td className="py-3 pr-4">
+                            <span className="font-medium">{detail.Product?.name || detail.product_name || `Producto #${detail.product_id}`}</span>
+                            {detail.Product?.category && <span className="text-xs text-muted-foreground ml-2">({detail.Product.category})</span>}
+                          </td>
+                          <td className="py-3 text-center font-semibold">{detail.quantity}</td>
+                          <td className="py-3 text-right font-semibold">${Number(unitPrice).toFixed(2)}</td>
+                          <td className="py-3 text-right font-semibold">${Number(detail.subtotal).toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-border">
+                      <td colSpan="3" className="py-3 text-right font-bold text-base">Total:</td>
+                      <td className="py-3 text-right font-bold text-base">${Number(selectedSaleDetails.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center min-h-[200px]">
+              <p className="text-muted-foreground">No se pudieron cargar los detalles.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
