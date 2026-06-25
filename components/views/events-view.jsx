@@ -577,7 +577,7 @@ export function EventsView() {
                     onDragOver={day ? handleDragOver : null}
                     onDrop={day ? (e) => handleDrop(e, day) : null}
                     onClick={() => day ? handleDayClick(day) : null}
-                    className={`min-h-32 rounded-xl border p-2 transition-all duration-200 
+                    className={`min-h-32 rounded-xl border p-2 transition-all duration-200 overflow-hidden
                       ${day ? "border-white/10 bg-card/40 hover:bg-card/80 hover:border-[#c05c3c]/50 cursor-pointer shadow-sm hover:shadow-md" : "border-transparent bg-transparent"} 
                       ${isToday ? "ring-2 ring-[#c05c3c] bg-[#c05c3c]/5" : ""}`}
                   >
@@ -599,7 +599,7 @@ export function EventsView() {
                                 e.stopPropagation();
                                 openEditModal(event);
                               }}
-                              className={`cursor-grab active:cursor-grabbing truncate rounded-lg px-2 py-1.5 text-xs font-bold shadow-sm border border-white/10 transition-transform hover:scale-[1.02] hover:shadow-md ${statusColors[event.status || 'Pending'] || "bg-[#1d3557] text-white"}`}
+                              className={                      `cursor-grab active:cursor-grabbing truncate rounded-lg px-2 py-1.5 text-xs font-bold shadow-sm border border-white/10 transition-all hover:shadow-md ${statusColors[event.status || 'Pending'] || "bg-[#1d3557] text-white"}`}
                               title={getEventName(event)}
                             >
                               {getEventName(event)}
