@@ -725,13 +725,16 @@ export function InventoryView() {
                       Tipo
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                      Product
+                      Producto
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                      Quantity
+                      Cantidad
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                      Unit Price
+                      Unidad Medida
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                      Precio Unit.
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
                       Date & Time
@@ -743,7 +746,7 @@ export function InventoryView() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredMovements.length === 0 ? <tr>
-                      <td colSpan={6} className="px-6 py-8">
+                      <td colSpan={7} className="px-6 py-8">
                         <div className="text-center text-muted-foreground">
                           <p className="text-sm">No se encontraron movimientos con los filtros aplicados</p>
                         </div>
@@ -771,7 +774,10 @@ export function InventoryView() {
                             {productName2}
                           </td>
                           <td className="px-6 py-4 text-sm font-bold text-foreground">
-                            {movement.quantity} {unitName}
+                            {movement.quantity}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground">
+                            {unitName || "-"}
                           </td>
                           <td className="px-6 py-4 text-sm text-muted-foreground">
                             {movement.unit_price ? `$${Number(movement.unit_price).toFixed(2)}` : "-"}

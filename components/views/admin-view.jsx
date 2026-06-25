@@ -86,12 +86,20 @@ export function AdminView() {
       if (!response.error) {
         const roles = extractList(response.data)
         const seen = new Set()
-        const uniqueRoles = roles.filter(r => {
+        const synonymMap = { 'admin': 'administrador' }
+        const uniqueRoles = []
+        for (const r of roles) {
           const key = r.role_name?.toLowerCase().trim()
-          if (!key || seen.has(key)) return false
-          seen.add(key)
-          return true
-        })
+          if (!key) continue
+          const resolvedKey = (synonymMap[key] || key)
+          if (seen.has(resolvedKey)) continue
+          seen.add(resolvedKey)
+          const displayName = r.role_name
+          uniqueRoles.push({
+            ...r,
+            role_name: synonymMap[key] ? 'Administrador' : displayName
+          })
+        }
         setRolesList(uniqueRoles)
       }
     } catch (err) {
