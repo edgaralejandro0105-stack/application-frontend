@@ -175,13 +175,14 @@ function ProfileInfoForm({ profile, updateUser, setProfile }) {
         phone: data.phone?.trim()
       };
       
-      const response = await apiClient.put(`/users/${profile.id}`, payload);
+      const response = await apiClient.put(`/users/${profile.user_id}`, payload);
       
       if (response.error || !response.data) {
         toast.error(response.error ?? "Error al actualizar perfil");
       } else {
-        setProfile(response.data);
-        updateUser(response.data);
+        const userData = response.data.data || response.data;
+        setProfile(userData);
+        updateUser(userData);
         toast.success("Perfil actualizado correctamente");
       }
     } catch (err) {
@@ -291,7 +292,7 @@ function ProfileSecurityForm({ profile }) {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      const response = await apiClient.put(`/users/${profile.id}/password`, {
+      const response = await apiClient.put(`/users/${profile.user_id}/password`, {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword
       });

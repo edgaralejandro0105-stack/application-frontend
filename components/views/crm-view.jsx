@@ -16,7 +16,8 @@ import {
   Download,
   AlertTriangle,
   Award,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Loader2
 } from "lucide-react";
 import { reportService } from "@/lib/services/report.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -134,6 +135,8 @@ export function CRMView() {
     try {
       setIsExporting(true);
       await reportService.downloadClientsPDF();
+    } catch (err) {
+      console.error("Error exportando PDF:", err);
     } finally {
       setIsExporting(false);
     }
