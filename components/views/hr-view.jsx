@@ -120,7 +120,11 @@ export function HRView() {
 
   const handleCreateEmployee = async () => {
     try {
-      const response = await employeeService.create(newEmployeeData);
+      const payload = {
+        ...newEmployeeData,
+        salary_per_event: newEmployeeData.salary_per_event === "" ? 0 : Number(newEmployeeData.salary_per_event)
+      };
+      const response = await employeeService.create(payload);
       if (response.error) throw new Error(response.error);
       setModalOpen(false);
       setNewEmployeeData({ first_name: "", last_name: "", email: "", phone: "", rol: "", salary_per_event: "", status: "active" });
@@ -132,10 +136,14 @@ export function HRView() {
 
   const handleUpdateEmployee = async () => {
     try {
-      const response = await employeeService.update(selectedEmployee.employee_id, editFormData);
+      const payload = {
+        ...editFormData,
+        salary_per_event: editFormData.salary_per_event === "" ? 0 : Number(editFormData.salary_per_event)
+      };
+      const response = await employeeService.update(selectedEmployee.employee_id, payload);
       if (response.error) throw new Error(response.error);
       setIsEditing(false);
-      setSelectedEmployee({ ...selectedEmployee, ...editFormData });
+      setSelectedEmployee({ ...selectedEmployee, ...payload });
       loadData();
     } catch (err) {
       alert("Error al actualizar empleado: " + err.message);
@@ -335,7 +343,7 @@ export function HRView() {
                     </div>
                     <div className="space-y-2">
                       <Label>Tarifa por Evento ($)</Label>
-                      <Input type="number" value={editFormData.salary_per_event} onChange={(e) => setEditFormData({...editFormData, salary_per_event: parseFloat(e.target.value) || 0})} className="rounded-xl focus:ring-[#c05c3c]"/>
+                      <Input type="number" min="0" value={editFormData.salary_per_event} onChange={(e) => setEditFormData({...editFormData, salary_per_event: e.target.value === "" ? "" : Math.max(0, parseFloat(e.target.value) || 0)})} className="rounded-xl focus:ring-[#c05c3c]"/>
                     </div>
                   </div>
                 </div>
@@ -906,7 +914,7 @@ export function HRView() {
                     type="number"
                     placeholder="20"
                     value={newEmployeeData.salary_per_event}
-                    onChange={(e) => setNewEmployeeData({...newEmployeeData, salary_per_event: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setNewEmployeeData({...newEmployeeData, salary_per_event: e.target.value === "" ? "" : Math.max(0, parseFloat(e.target.value) || 0)})}
                     className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
                   />
                 </div>

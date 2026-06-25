@@ -8,9 +8,6 @@ import {
   X,
   ChevronDown,
   Wine,
-  UtensilsCrossed,
-  Lamp,
-  Armchair,
   History,
   Edit2,
   Trash2,
@@ -28,14 +25,13 @@ import { productService } from "@/lib/services/product.service";
 import { inventorybarService } from "@/lib/services/inventorybar.service";
 import { reportService } from "@/lib/services/report.service";
 const categoryIcons = {
-  Beverages: Wine,
-  Catering: UtensilsCrossed,
-  Decoracion: Lamp,
-  Furniture: Armchair,
-  "Table Linens": Package,
-  Glassware: Wine,
-  Floral: Package,
-  Bar: Wine,
+  Licores: Wine,
+  Cervezas: Wine,
+  Cocteles: Wine,
+  Vinos: Wine,
+  Refrescos: Package,
+  Snacks: Package,
+  Insumos: Package,
   General: Package
 };
 export function InventoryView() {
@@ -55,12 +51,12 @@ export function InventoryView() {
   const [movementQuantity, setMovementQuantity] = useState(1);
   const [movementUnitPrice, setMovementUnitPrice] = useState("");
   const [productName, setProductName] = useState("");
-  const [productCategory, setProductCategory] = useState("Bar");
-  const [productUnit, setProductUnit] = useState("Botella");
+  const [productCategory, setProductCategory] = useState("General");
+  const [productUnit, setProductUnit] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [productExpiry, setProductExpiry] = useState("");
-  const [productStock, setProductStock] = useState(0);
-  const [productMinStock, setProductMinStock] = useState(0);
+  const [productStock, setProductStock] = useState("");
+  const [productMinStock, setProductMinStock] = useState("");
   const [productPrice, setProductPrice] = useState("");
   
   // New Filter States
@@ -85,8 +81,8 @@ export function InventoryView() {
   const [historyType, setHistoryType] = useState("All");
   const [historyDateRange, setHistoryDateRange] = useState({ from: "", to: "" });
   const [showHistoryFilters, setShowHistoryFilters] = useState(false);
-  const categories = ["All", "Beverages", "Catering", "Decoracion", "Furniture", "Table Linens", "Glassware", "Floral", "Bar", "General"];
-  const formCategories = ["Beverages", "Catering", "Decoracion", "Furniture", "Table Linens", "Glassware", "Floral", "Bar", "General"];
+  const categories = ["All", "Licores", "Cervezas", "Cocteles", "Vinos", "Refrescos", "Snacks", "Insumos", "General"];
+  const formCategories = ["Licores", "Cervezas", "Cocteles", "Vinos", "Refrescos", "Snacks", "Insumos", "General"];
   const loadData = async () => {
     try {
       setLoading(true);
@@ -175,11 +171,11 @@ export function InventoryView() {
     setIsEditingProduct(false);
     setSelectedProduct(null);
     setProductName("");
-    setProductCategory("Bar");
-    setProductUnit("Botella");
+    setProductCategory("General");
+    setProductUnit("");
     setProductExpiry("");
-    setProductStock(0);
-    setProductMinStock(0);
+    setProductStock("");
+    setProductMinStock("");
     setProductPrice("");
     setProductImage(null);
     setProductModalOpen(true);
@@ -188,11 +184,11 @@ export function InventoryView() {
     setIsEditingProduct(true);
     setSelectedProduct(product);
     setProductName(product.name || "");
-    setProductCategory(product.category || "Bar");
-    setProductUnit(product.measurement_unit || "Botella");
+    setProductCategory(product.category || "General");
+    setProductUnit(product.measurement_unit || "");
     setProductExpiry(product.expiry_date ? product.expiry_date.substring(0, 10) : "");
-    setProductStock(product.current_stock || 0);
-    setProductMinStock(product.min_stock || 0);
+    setProductStock(product.current_stock ?? "");
+    setProductMinStock(product.min_stock ?? "");
     setProductPrice(product.unit_price || "");
     setProductImage(null);
     setProductModalOpen(true);
@@ -215,8 +211,8 @@ export function InventoryView() {
     formData.append("category", productCategory);
     formData.append("measurement_unit", productUnit);
     if (productExpiry) formData.append("expiry_date", productExpiry);
-    formData.append("min_stock", productMinStock);
-    formData.append("current_stock", productStock);
+    formData.append("min_stock", productMinStock || 0);
+    formData.append("current_stock", productStock || 0);
     formData.append("unit_price", productPrice || 0);
     if (productImage) {
       formData.append("image", productImage);
@@ -967,7 +963,7 @@ export function InventoryView() {
               <div>
                 <Label className="text-sm font-semibold">Unidad de medida *</Label>
                 <Input
-    placeholder="Ej. Botella, Unidad, Litro"
+    placeholder="Ej. Litro, Botella, Unidad, 500ml"
     value={productUnit}
     onChange={(e) => setProductUnit(e.target.value)}
     className="mt-1 rounded-xl"
@@ -991,7 +987,7 @@ export function InventoryView() {
     type="number"
     min="0"
     value={productMinStock}
-    onChange={(e) => setProductMinStock(Number(e.target.value))}
+    onChange={(e) => setProductMinStock(e.target.value === "" ? "" : Number(e.target.value))}
     className="mt-1 rounded-xl"
   />
               </div>
@@ -1004,7 +1000,7 @@ export function InventoryView() {
     type="number"
     min="0"
     value={productStock}
-    onChange={(e) => setProductStock(Number(e.target.value))}
+    onChange={(e) => setProductStock(e.target.value === "" ? "" : Number(e.target.value))}
     className="mt-1 rounded-xl"
   />
               </div>

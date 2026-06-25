@@ -84,7 +84,15 @@ export function AdminView() {
     try {
       const response = await apiClient.get('/roles')
       if (!response.error) {
-        setRolesList(extractList(response.data))
+        const roles = extractList(response.data)
+        const seen = new Set()
+        const uniqueRoles = roles.filter(r => {
+          const key = r.role_name?.toLowerCase().trim()
+          if (!key || seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        setRolesList(uniqueRoles)
       }
     } catch (err) {
       console.error('Error al cargar roles:', err)

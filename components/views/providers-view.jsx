@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { 
-  User, CheckCircle2, XCircle, Truck, Download, Loader2, SlidersHorizontal, Search, Plus
+  User, CheckCircle2, XCircle, Truck, Download, Loader2, SlidersHorizontal, Search, Plus,
+  Edit, Trash2, Mail, Phone, MapPin, FileText
 } from "lucide-react";
 import { reportService } from "@/lib/services/report.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +38,8 @@ export function ProvidersView() {
   // Form State
   const [formData, setFormData] = useState({
     name: "",
-    contact_name: "",
+    category: "",
+    rif: "",
     phone: "",
     email: "",
     address: "",
@@ -89,7 +91,7 @@ export function ProvidersView() {
   const openAddModal = () => {
     setIsEditing(false);
     setSelectedProvider(null);
-    setFormData({ name: "", contact_name: "", phone: "", email: "", address: "", status: "active" });
+    setFormData({ name: "", category: "", rif: "", phone: "", email: "", address: "", status: "active" });
     setIsModalOpen(true);
   };
 
@@ -98,7 +100,8 @@ export function ProvidersView() {
     setSelectedProvider(provider);
     setFormData({
       name: provider.name || "",
-      contact_name: provider.contact_name || "",
+      category: provider.category || "",
+      rif: provider.rif || "",
       phone: provider.phone || "",
       email: provider.email || "",
       address: provider.address || "",
@@ -277,7 +280,7 @@ export function ProvidersView() {
                     <div>
                       <h3 className="font-bold text-foreground text-lg line-clamp-1">{provider.name}</h3>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <User className="h-3 w-3" /> {provider.contact_name || "Sin contacto"}
+                        <FileText className="h-3 w-3" /> {provider.rif || "Sin RIF"}
                       </p>
                     </div>
                   </div>
@@ -384,12 +387,24 @@ export function ProvidersView() {
                 />
               </div>
 
+              <div>
+                <Label className="text-sm font-semibold">Categoría (Opcional)</Label>
+                <Input
+                  name="category"
+                  placeholder="Ej. Licores, Refrescos, Snacks"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="mt-1 rounded-xl bg-background/50"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-semibold">Contacto (Opcional)</Label>
+                  <Label className="text-sm font-semibold">RIF o Identificación</Label>
                   <Input
-                    name="contact_name"
-                    value={formData.contact_name}
+                    name="rif"
+                    placeholder="J-12345678-9"
+                    value={formData.rif}
                     onChange={handleInputChange}
                     className="mt-1 rounded-xl bg-background/50"
                   />
