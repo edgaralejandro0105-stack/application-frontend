@@ -7,13 +7,21 @@ import {
   AlertTriangle,
   CreditCard,
   Banknote,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Briefcase,
+  Clock,
+  TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { eventService } from "@/lib/services/event.service";
 import { clientService } from "@/lib/services/client.service";
 import { inventoryService } from "@/lib/services/inventory.service";
 import { saleService } from "@/lib/services/sale.service";
+import { authService } from "@/lib/services/auth.service";
+import { 
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+} from "recharts";
 
 const statusColors = {
   Lead: "bg-[#8b5cf6]/15 text-[#8b5cf6]",
@@ -40,7 +48,12 @@ const paymentIcons = {
   "Pago Móvil": <ArrowRightLeft className="h-4 w-4 text-[#f472b6]" />
 };
 
+import { useAuth } from "@/context/AuthContext";
+
 export function DashboardView() {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState(null);
+  
   const [stats, setStats] = useState({
     totalEvents: 0,
     totalRevenue: 0,
@@ -50,6 +63,14 @@ export function DashboardView() {
 
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [recentSales, setRecentSales] = useState([]);
+  
+  // Chart states
+  const [revenueData, setRevenueData] = useState([]);
+  const [eventTypesData, setEventTypesData] = useState([]);
+  const [venuesData, setVenuesData] = useState([]);
+  const [staffWorkloadData, setStaffWorkloadData] = useState([]);
+  const [staffRolesData, setStaffRolesData] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -65,12 +86,38 @@ export function DashboardView() {
         setLoading(true);
         setError(null);
 
-        const [eventsRes, clientsRes, inventoryRes, salesRes] = await Promise.all([
-          eventService.getAll({ limit: 10000 }),
-          clientService.getAll({ limit: 10000 }),
-          inventoryService.getLowStockItems ? inventoryService.getLowStockItems() : Promise.resolve({ data: [] }),
-          saleService.getAll({ limit: 10000 })
+        const userRole = user?.Role?.role_name;
+        const accessLevel = user?.Role?.access || 0;
+        const isAdmin = accessLevel >= 3;
+        
+        const canViewEvents = isAdmin || ["Gerente", "Ventas", "Staff"].includes(userRole);
+        const canViewClients = isAdmin || ["Gerente", "Ventas"].includes(userRole);
+        const canViewInventory = isAdmin || ["Gerente"].includes(userRole);
+        const canViewSales = isAdmin || ["Gerente", "Ventas"].includes(userRole);
+
+        // Fetch user profile to get Employee details (like salary) if they are Staff
+        let userProfile = null;
+        try {
+          const profileRes = await authService.getProfile();
+          if (profileRes && !profileRes.error) {
+            userProfile = profileRes.data;
+            setProfile(userProfile);
+          }
+        } catch (e) {
+          console.error("Error loading profile:", e);
+        }
+
+        const results = await Promise.allSettled([
+          canViewEvents ? eventService.getAll({ limit: 10000 }) : Promise.resolve({ data: [] }),
+          canViewClients ? clientService.getAll({ limit: 10000 }) : Promise.resolve({ data: [] }),
+          (canViewInventory && inventoryService.getLowStockItems) ? inventoryService.getLowStockItems() : Promise.resolve({ data: [] }),
+          canViewSales ? saleService.getAll({ limit: 10000 }) : Promise.resolve({ data: [] })
         ]);
+
+        const eventsRes = results[0].status === 'fulfilled' ? results[0].value : { data: [] };
+        const clientsRes = results[1].status === 'fulfilled' ? results[1].value : { data: [] };
+        const inventoryRes = results[2].status === 'fulfilled' ? results[2].value : { data: [] };
+        const salesRes = results[3].status === 'fulfilled' ? results[3].value : { data: [] };
 
         const getArray = (resPayload) => {
           if (!resPayload) return [];
@@ -87,8 +134,6 @@ export function DashboardView() {
         const totalEvents = eventsList.length;
         const activeClients = clientsList.filter((c) => c.status === "Active" || !c.status).length;
         const lowStockAlerts = inventoryList.length;
-        
-        // El backend devuelve 'total' en lugar de 'total_amount'
         const totalRevenue = salesList.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
 
         setStats({
@@ -98,14 +143,105 @@ export function DashboardView() {
           lowStockAlerts
         });
 
-        // Próximos eventos manualmente mapeados usando la lógica correcta (start_date)
+        // 1. Group Monthly Revenue (for AreaChart)
+        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        const today = new Date();
+        const revMap = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+          revMap.push({
+            name: months[d.getMonth()],
+            Ingresos: 0,
+            year: d.getFullYear(),
+            monthIndex: d.getMonth()
+          });
+        }
+        salesList.forEach(sale => {
+          const sDate = getSafeDate(sale.create_at || sale.createdAt);
+          const saleMonth = sDate.getMonth();
+          const saleYear = sDate.getFullYear();
+          const bucket = revMap.find(b => b.monthIndex === saleMonth && b.year === saleYear);
+          if (bucket) {
+            bucket.Ingresos += Number(sale.total || sale.total_amount || 0);
+          }
+        });
+        setRevenueData(revMap);
+
+        // 2. Event Types Popularity (for PieChart / BarChart)
+        const typeCounts = {};
+        eventsList.forEach(e => {
+          const type = e.type_event || "Otro";
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
+        });
+        setEventTypesData(Object.entries(typeCounts).map(([name, value]) => ({ name, value })));
+
+        // 3. Venues Popularity (for BarChart)
+        const venueCounts = {};
+        eventsList.forEach(e => {
+          let names = [];
+          if (e.Venues && e.Venues.length > 0) {
+            names = e.Venues.map(v => v.name);
+          } else if (e.Venue?.name) {
+            names = [e.Venue.name];
+          } else if (e.venue_name) {
+            names = [e.venue_name];
+          } else {
+            names = ["Sin Salón"];
+          }
+          names.forEach(name => {
+            venueCounts[name] = (venueCounts[name] || 0) + 1;
+          });
+        });
+        setVenuesData(Object.entries(venueCounts).map(([name, value]) => ({ name, value })));
+
+        // 4. Staff-specific Workload and Roles Distribution
+        if (userRole === 'Staff') {
+          const workloadMap = [];
+          for (let i = 5; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            workloadMap.push({
+              name: months[d.getMonth()],
+              Jornadas: 0,
+              year: d.getFullYear(),
+              monthIndex: d.getMonth()
+            });
+          }
+          eventsList.forEach(event => {
+            const eDate = getSafeDate(event.start_date || event.date);
+            const eMonth = eDate.getMonth();
+            const eYear = eDate.getFullYear();
+            const bucket = workloadMap.find(b => b.monthIndex === eMonth && b.year === eYear);
+            if (bucket) {
+              bucket.Jornadas += 1;
+            }
+          });
+          setStaffWorkloadData(workloadMap);
+
+          const staffEmpId = userProfile?.Employee?.employee_id;
+          const roleDistribution = {};
+          eventsList.forEach(event => {
+            if (event.EventStaffs && staffEmpId) {
+              const assignment = event.EventStaffs.find(es => es.employee_id === staffEmpId);
+              if (assignment) {
+                const empRol = assignment.Employee?.rol || userProfile?.Employee?.rol || "Staff";
+                roleDistribution[empRol] = (roleDistribution[empRol] || 0) + 1;
+              }
+            } else {
+              const empRol = userProfile?.Employee?.rol || "Staff";
+              roleDistribution[empRol] = (roleDistribution[empRol] || 0) + 1;
+            }
+          });
+          setStaffRolesData(Object.entries(roleDistribution).map(([name, value]) => ({ name, value })));
+        }
+
+        // Map upcoming events
         const upcoming = eventsList
           .filter((e) => e.status !== "Finished" && e.status !== "Cancelled")
           .sort((a, b) => getSafeDate(a.start_date || a.date).getTime() - getSafeDate(b.start_date || b.date).getTime())
           .slice(0, 5);
         setUpcomingEvents(upcoming);
 
-        // Ventas recientes (ordenadas por create_at)
+        // Map recent sales
         const recent = salesList
           .sort((a, b) => getSafeDate(b.create_at || b.createdAt).getTime() - getSafeDate(a.create_at || a.createdAt).getTime())
           .slice(0, 5);
@@ -123,7 +259,47 @@ export function DashboardView() {
     fetchDashboardData();
   }, []);
 
-  const kpiData = [
+  const userRole = user?.Role?.role_name;
+  const accessLevel = user?.Role?.access || 0;
+  const isAdmin = accessLevel >= 3;
+
+  const showRevenue = isAdmin || userRole === "Gerente" || userRole === "Ventas";
+  const showClients = isAdmin || userRole === "Gerente" || userRole === "Ventas";
+  const showInventory = isAdmin || userRole === "Gerente";
+
+  const salaryPerEvent = Number(profile?.Employee?.salary_per_event || 50);
+  const projectedEarnings = stats.totalEvents * salaryPerEvent;
+
+  const kpiData = userRole === "Staff" ? [
+    {
+      title: "Jornadas Asignadas",
+      value: stats.totalEvents,
+      change: "Próximas",
+      icon: Calendar,
+      color: "bg-[#8b5cf6]"
+    },
+    {
+      title: "Rol Principal",
+      value: profile?.Employee?.rol || "Staff",
+      change: "Activo",
+      icon: Briefcase,
+      color: "bg-[#0ea5e9]"
+    },
+    {
+      title: "Horas Estimadas",
+      value: `${stats.totalEvents * 5} hrs`,
+      change: "Aprox. 5h/evento",
+      icon: Clock,
+      color: "bg-[#f472b6]"
+    },
+    {
+      title: "Honorarios Proyectados",
+      value: `$${projectedEarnings.toLocaleString()}`,
+      change: `Est. $${salaryPerEvent}/evento`,
+      icon: DollarSign,
+      color: "bg-[#10b981]"
+    }
+  ] : [
     {
       title: "Total Eventos",
       value: stats.totalEvents,
@@ -136,23 +312,26 @@ export function DashboardView() {
       value: `$${stats.totalRevenue.toLocaleString()}`,
       change: "+8.2%",
       icon: DollarSign,
-      color: "bg-[#0ea5e9]"
+      color: "bg-[#0ea5e9]",
+      visible: showRevenue
     },
     {
       title: "Clientes Activos",
       value: stats.activeClients,
       change: "+5%",
       icon: Users,
-      color: "bg-[#f472b6]"
+      color: "bg-[#f472b6]",
+      visible: showClients
     },
     {
       title: "Alertas de Inventario",
       value: stats.lowStockAlerts,
       change: "-3",
       icon: AlertTriangle,
-      color: "bg-[#facc15]"
+      color: "bg-[#facc15]",
+      visible: showInventory
     }
-  ];
+  ].filter(kpi => kpi.visible !== false);
 
   if (loading) {
     return (
@@ -169,6 +348,8 @@ export function DashboardView() {
       </div>
     );
   }
+
+  const COLORS = ["#8b5cf6", "#0ea5e9", "#f472b6", "#facc15", "#10b981", "#ef4444", "#f97316"];
 
   try {
     return (
@@ -188,7 +369,7 @@ export function DashboardView() {
           {kpiData.map((kpi) => (
             <Card
               key={kpi.title}
-              className="glass-panel premium-card overflow-hidden rounded-2xl"
+              className="overflow-hidden rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40"
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -214,7 +395,7 @@ export function DashboardView() {
           {userRole === "Staff" ? (
             <>
               {/* Staff Workload Chart */}
-              <Card className="glass-panel rounded-2xl overflow-hidden">
+              <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
                     <TrendingUp className="h-5 w-5 text-[#8b5cf6]" />
@@ -235,7 +416,7 @@ export function DashboardView() {
               </Card>
 
               {/* Staff Roles Chart */}
-              <Card className="glass-panel rounded-2xl overflow-hidden">
+              <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
                     <Briefcase className="h-5 w-5 text-[#f472b6]" />
@@ -272,7 +453,7 @@ export function DashboardView() {
           ) : (
             <>
               {/* Management Revenue Chart */}
-              <Card className="glass-panel rounded-2xl overflow-hidden">
+              <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
                     <TrendingUp className="h-5 w-5 text-[#0ea5e9]" />
@@ -299,7 +480,7 @@ export function DashboardView() {
               </Card>
 
               {/* Management Event Types Chart */}
-              <Card className="glass-panel rounded-2xl overflow-hidden">
+              <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
                     <Briefcase className="h-5 w-5 text-[#8b5cf6]" />
@@ -335,22 +516,23 @@ export function DashboardView() {
             </>
           )}
         </div>
+
         {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className={`grid gap-6 ${showRevenue ? 'lg:grid-cols-3' : 'grid-cols-1'}`}>
           
           {/* Next Events */}
-          <Card className={`glass-panel rounded-2xl ${showRevenue ? 'lg:col-span-2' : 'col-span-1'}`}>
+          <Card className={`rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg ${showRevenue ? 'lg:col-span-2' : 'col-span-1'}`}>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
                 <Calendar className="h-5 w-5 text-[#8b5cf6]" />
-                Próximos Eventos
+                {userRole === "Staff" ? "Mis Próximos Eventos Asignados" : "Próximos Eventos"}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {upcomingEvents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-8 text-muted-foreground/60">
                   <Calendar className="h-12 w-12 mb-3 opacity-20" />
-                  <p className="text-sm font-medium">No hay eventos próximos en la base de datos.</p>
+                  <p className="text-sm font-medium">No hay eventos próximos asignados.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -393,7 +575,7 @@ export function DashboardView() {
 
           {/* Recent Sales */}
           {showRevenue && (
-            <Card className="glass-panel rounded-2xl">
+            <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
                   <DollarSign className="h-5 w-5 text-[#6b705c]" />
