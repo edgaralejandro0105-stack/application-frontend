@@ -168,5 +168,36 @@
   background: rgba(107, 112, 92, 0.4);
 }
 
+/* Glassmorphism custom components */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+}
+
+.dark .glass-panel {
+  background: rgba(10, 14, 32, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+}
+
+.premium-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(192, 92, 60, 0.35) !important;
+  box-shadow: 0 12px 40px -10px rgba(192, 92, 60, 0.25) !important;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #c05c3c 0%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 
 @media print { body, html { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: white !important; color: black !important; } body::before { display: none !important; } .print\:block, .print\:block * { color: black !important; border-color: black !important; } }
