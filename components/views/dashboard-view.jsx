@@ -188,7 +188,7 @@ export function DashboardView() {
           {kpiData.map((kpi) => (
             <Card
               key={kpi.title}
-              className="overflow-hidden rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40"
+              className="glass-panel premium-card overflow-hidden rounded-2xl"
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -209,11 +209,145 @@ export function DashboardView() {
           ))}
         </div>
 
+<<<<<<< HEAD
+=======
+        {/* Charts Grid */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {userRole === "Staff" ? (
+            <>
+              {/* Staff Workload Chart */}
+              <Card className="glass-panel rounded-2xl overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                    <TrendingUp className="h-5 w-5 text-[#8b5cf6]" />
+                    Mi Carga de Trabajo (Mensual)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={staffWorkloadData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={11} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={11} allowDecimals={false} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
+                      <Bar dataKey="Jornadas" fill="#8b5cf6" radius={[6, 6, 0, 0]} barSize={35} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Staff Roles Chart */}
+              <Card className="glass-panel rounded-2xl overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                    <Briefcase className="h-5 w-5 text-[#f472b6]" />
+                    Distribución de Roles
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 flex justify-center items-center">
+                  {staffRolesData.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-16">Sin datos de roles asignados</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie
+                          data={staffRolesData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {staffRolesData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <>
+              {/* Management Revenue Chart */}
+              <Card className="glass-panel rounded-2xl overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                    <TrendingUp className="h-5 w-5 text-[#0ea5e9]" />
+                    Evolución de Ingresos (Mensual)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={revenueData}>
+                      <defs>
+                        <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={11} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={11} tickFormatter={(v) => `$${v.toLocaleString()}`} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} formatter={(v) => [`$${Number(v).toLocaleString()}`, "Ingresos"]} />
+                      <Area type="monotone" dataKey="Ingresos" stroke="#0ea5e9" strokeWidth={2} fillOpacity={1} fill="url(#colorIngresos)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Management Event Types Chart */}
+              <Card className="glass-panel rounded-2xl overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                    <Briefcase className="h-5 w-5 text-[#8b5cf6]" />
+                    Popularidad de Tipos de Eventos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 flex justify-center items-center">
+                  {eventTypesData.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-16">Sin datos de tipos de evento</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie
+                          data={eventTypesData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {eventTypesData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+
+>>>>>>> c963b9c6 (style: implement glassmorphism utilities and apply to dashboard view)
         {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-3">
           
           {/* Next Events */}
+<<<<<<< HEAD
           <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg lg:col-span-2">
+=======
+          <Card className={`glass-panel rounded-2xl ${showRevenue ? 'lg:col-span-2' : 'col-span-1'}`}>
+>>>>>>> c963b9c6 (style: implement glassmorphism utilities and apply to dashboard view)
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
                 <Calendar className="h-5 w-5 text-[#8b5cf6]" />
@@ -266,53 +400,55 @@ export function DashboardView() {
           </Card>
 
           {/* Recent Sales */}
-          <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                <DollarSign className="h-5 w-5 text-[#6b705c]" />
-                Ventas Recientes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentSales.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-8 text-muted-foreground/60">
-                  <DollarSign className="h-12 w-12 mb-3 opacity-20" />
-                  <p className="text-sm font-medium">No hay ventas registradas.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentSales.map((sale) => (
-                    <div
-                      key={sale.sale_id || sale.id}
-                      className="flex items-center justify-between border-b border-border/50 pb-4 last:border-0 last:pb-0"
-                    >
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">
-                          {sale.Event?.name || `Evento #${sale.event_id || 'N/A'}`}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {getSafeDate(sale.create_at || sale.createdAt).toLocaleDateString('es-ES')}
-                        </p>
+          {showRevenue && (
+            <Card className="glass-panel rounded-2xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                  <DollarSign className="h-5 w-5 text-[#6b705c]" />
+                  Ventas Recientes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentSales.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-muted-foreground/60">
+                    <DollarSign className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="text-sm font-medium">No hay ventas registradas.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentSales.map((sale) => (
+                      <div
+                        key={sale.sale_id || sale.id}
+                        className="flex items-center justify-between border-b border-border/50 pb-4 last:border-0 last:pb-0"
+                      >
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">
+                            {sale.Event?.name || `Evento #${sale.event_id || 'N/A'}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {getSafeDate(sale.create_at || sale.createdAt).toLocaleDateString('es-ES')}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5">
+                          <p className="font-bold text-[#8b5cf6] text-lg leading-none">
+                            ${Number(sale.total || sale.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </p>
+                          {sale.payment_method && (
+                            <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2 py-0.5 text-xs text-foreground shadow-sm shadow-[#8b5cf6]/10">
+                              {paymentIcons[sale.payment_method] || paymentIcons["Card"]}
+                              <span className="font-medium text-muted-foreground">
+                                {sale.payment_method}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1.5">
-                        <p className="font-bold text-[#8b5cf6] text-lg leading-none">
-                          ${Number(sale.total || sale.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </p>
-                        {sale.payment_method && (
-                          <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2 py-0.5 text-xs text-foreground shadow-sm shadow-[#8b5cf6]/10">
-                            {paymentIcons[sale.payment_method] || paymentIcons["Card"]}
-                            <span className="font-medium text-muted-foreground">
-                              {sale.payment_method}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );
