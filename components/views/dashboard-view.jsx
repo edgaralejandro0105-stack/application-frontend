@@ -209,8 +209,6 @@ export function DashboardView() {
           ))}
         </div>
 
-<<<<<<< HEAD
-=======
         {/* Charts Grid */}
         <div className="grid gap-6 md:grid-cols-2">
           {userRole === "Staff" ? (
@@ -337,17 +335,11 @@ export function DashboardView() {
             </>
           )}
         </div>
-
->>>>>>> c963b9c6 (style: implement glassmorphism utilities and apply to dashboard view)
         {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-3">
           
           {/* Next Events */}
-<<<<<<< HEAD
-          <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg lg:col-span-2">
-=======
           <Card className={`glass-panel rounded-2xl ${showRevenue ? 'lg:col-span-2' : 'col-span-1'}`}>
->>>>>>> c963b9c6 (style: implement glassmorphism utilities and apply to dashboard view)
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
                 <Calendar className="h-5 w-5 text-[#8b5cf6]" />
