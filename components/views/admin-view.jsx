@@ -1,4 +1,3 @@
-'use client'
 import { useState, useEffect } from 'react'
 import { apiClient, extractList } from '@/lib/api-client'
 import { venueService } from '@/lib/services/venue.service'
@@ -20,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 const roles = [
   'Administradores',
@@ -56,6 +56,9 @@ export function AdminView() {
   const [isSavingUser, setIsSavingUser] = useState(false)
   const [venueModalOpen, setVenueModalOpen] = useState(false)
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
+  
+  // Custom Confirm Dialog State
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null })
 
   // States for Users & Roles
   const [users, setUsers] = useState([])
@@ -192,14 +195,14 @@ export function AdminView() {
       }
 
       if (res && res.error) {
-        alert(`Error: ${res.error}`)
+        toast.error(`Error: ${res.error}`)
         return
       }
 
       setUserModalOpen(false)
       loadUsers()
     } catch (err) {
-      alert('Error al guardar el usuario')
+      toast.error('Error al guardar el usuario')
       console.error(err)
     } finally {
       setIsSavingUser(false)
@@ -207,14 +210,20 @@ export function AdminView() {
   }
 
   const handleDeleteUser = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
-      try {
-        await apiClient.delete(`/users/${id}`)
-        loadUsers()
-      } catch (err) {
-        alert('Error al eliminar el usuario')
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Enviar a la Papelera',
+      message: '¿Estás seguro de que deseas enviar este usuario a la papelera?',
+      onConfirm: async () => {
+        try {
+          await apiClient.delete(`/users/${id}`)
+          loadUsers()
+          toast.success('Usuario enviado a la papelera')
+        } catch (err) {
+          toast.error('Error al enviar a la papelera')
+        }
       }
-    }
+    })
   }
 
   // --- VENUE HANDLERS ---
@@ -254,27 +263,33 @@ export function AdminView() {
         res = await venueService.create(formData)
       }
       if (res && res.error) {
-        alert('Error: ' + res.error)
+        toast.error('Error: ' + res.error)
         return
       }
       setVenueModalOpen(false)
       loadVenues()
     } catch (err) {
-      alert('Error al guardar el salón')
+      toast.error('Error al guardar el sal\u00f3n')
     } finally {
       setIsSavingVenue(false)
     }
   }
 
   const handleDeleteVenue = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este salón?')) {
-      try {
-        await venueService.delete(id)
-        loadVenues()
-      } catch (err) {
-        alert('Error al eliminar el salón')
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Enviar a la Papelera',
+      message: '¿Estás seguro de enviar este salón a la papelera?',
+      onConfirm: async () => {
+        try {
+          await venueService.delete(id)
+          loadVenues()
+          toast.success('Salón enviado a la papelera')
+        } catch (err) {
+          toast.error('Error al enviar a la papelera')
+        }
       }
-    }
+    })
   }
 
   // --- SERVICE HANDLERS ---
@@ -314,28 +329,34 @@ export function AdminView() {
         res = await serviceExternalService.create(formData)
       }
       if (res && res.error) {
-        alert('Error: ' + res.error)
+        toast.error('Error: ' + res.error)
         return
       }
       setServiceModalOpen(false)
       loadServices()
     } catch (err) {
-      alert('Error al guardar el servicio')
+      toast.error('Error al guardar el servicio')
     } finally {
       setIsSavingService(false)
     }
   }
 
   const handleDeleteService = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este servicio?')) {
-      try {
-        const res = await serviceExternalService.delete(id)
-        if (res && res.error) throw new Error(res.error)
-        loadServices()
-      } catch (err) {
-        alert('Error al eliminar: ' + err.message)
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Enviar a la Papelera',
+      message: '¿Estás seguro de enviar este servicio a la papelera?',
+      onConfirm: async () => {
+        try {
+          const res = await serviceExternalService.delete(id)
+          if (res && res.error) throw new Error(res.error)
+          loadServices()
+          toast.success('Servicio enviado a la papelera')
+        } catch (err) {
+          toast.error('Error al enviar a la papelera: ' + err.message)
+        }
       }
-    }
+    })
   }
 
   return (
@@ -1145,6 +1166,44 @@ export function AdminView() {
           </Card>
         </div>
       )}
+    {/* Custom Confirm Dialog */}
+    {confirmDialog.isOpen && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+        <Card className="w-full max-w-sm rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
+          <CardHeader className="pb-4 border-b border-border">
+            <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-[#c05c3c]" />
+              {confirmDialog.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 p-6">
+            <p className="text-sm text-muted-foreground">
+              {confirmDialog.message}
+            </p>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+                className="rounded-xl border-border"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (confirmDialog.onConfirm) {
+                    await confirmDialog.onConfirm();
+                  }
+                  setConfirmDialog({ ...confirmDialog, isOpen: false });
+                }}
+                className="rounded-xl bg-[#c05c3c] text-white hover:bg-[#a84d32]"
+              >
+                Sí, mover
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )}
     </>
   )
 }

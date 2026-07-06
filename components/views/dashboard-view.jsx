@@ -1,4 +1,3 @@
-"use client";
 import { useEffect, useState } from "react";
 import {
   Calendar,
@@ -365,24 +364,24 @@ export function DashboardView() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {kpiData.map((kpi) => (
             <Card
               key={kpi.title}
               className="overflow-hidden rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40"
             >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex items-center sm:items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider line-clamp-1">
                       {kpi.title}
                     </p>
-                    <p className="mt-2 text-2xl font-bold text-foreground">
+                    <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-foreground">
                       {kpi.value}
                     </p>
                   </div>
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-lg ${kpi.color}`}>
-                    <kpi.icon className="h-6 w-6 text-white" />
+                  <div className={`flex shrink-0 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl shadow-lg ${kpi.color}`}>
+                    <kpi.icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
                 </div>
               </CardContent>
@@ -408,7 +407,7 @@ export function DashboardView() {
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                       <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={11} />
                       <YAxis stroke="rgba(255,255,255,0.5)" fontSize={11} allowDecimals={false} />
-                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#fff' }} labelStyle={{ color: '#fff' }} />
                       <Bar dataKey="Jornadas" fill="#8b5cf6" radius={[6, 6, 0, 0]} barSize={35} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -442,8 +441,8 @@ export function DashboardView() {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
-                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#fff' }} labelStyle={{ color: '#fff' }} />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" formatter={(value) => <span style={{ color: "var(--foreground)" }}>{value}</span>} />
                       </PieChart>
                     </ResponsiveContainer>
                   )}
@@ -472,7 +471,7 @@ export function DashboardView() {
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                       <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={11} />
                       <YAxis stroke="rgba(255,255,255,0.5)" fontSize={11} tickFormatter={(v) => `$${v.toLocaleString()}`} />
-                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} formatter={(v) => [`$${Number(v).toLocaleString()}`, "Ingresos"]} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#fff' }} labelStyle={{ color: '#fff' }} formatter={(v) => [`$${Number(v).toLocaleString()}`, "Ingresos"]} />
                       <Area type="monotone" dataKey="Ingresos" stroke="#0ea5e9" strokeWidth={2} fillOpacity={1} fill="url(#colorIngresos)" />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -506,8 +505,8 @@ export function DashboardView() {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
-                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(15,15,25,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#fff' }} labelStyle={{ color: '#fff' }} />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" formatter={(value) => <span style={{ color: "var(--foreground)" }}>{value}</span>} />
                       </PieChart>
                     </ResponsiveContainer>
                   )}

@@ -1,4 +1,5 @@
-import React, { useState } from "react"
+import React from "react"
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { Sidebar } from "@/components/sidebar"
 import { DashboardView } from "@/components/views/dashboard-view"
 import { EventsView } from "@/components/views/events-view"
@@ -6,6 +7,7 @@ import { CRMView } from "@/components/views/crm-view"
 import { InventoryView } from "@/components/views/inventory-view"
 import { HRView } from "@/components/views/hr-view"
 import { AdminView } from "@/components/views/admin-view"
+import { TrashView } from "@/components/views/trash-view"
 import { SalesList } from "@/components/views/sales-list"
 import { CreateSale } from "@/components/views/create-sale"
 import { ProvidersView } from "@/components/views/providers-view"
@@ -13,14 +15,11 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { Profile } from "@/components/auth/Profile"
 import { useAuth } from "@/context/AuthContext"
 import { ThemeToggle } from "@/components/theme-toggle"
-// trigger HMR
 import { NotificationBell } from "@/components/NotificationBell"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { User, LogOut } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { User, LogOut, Trash2 } from "lucide-react"
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState("dashboard")
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -33,43 +32,22 @@ export default function Home() {
     }
   }
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case "dashboard":
-        return <DashboardView />
-      case "events":
-        return <EventsView />
-      case "crm":
-        return <CRMView />
-      case "inventory":
-        return <InventoryView />
-      case "hr":
-        return <HRView />
-      case "sales":
-        return <SalesList onNavigate={setActiveSection} />
-      case "create-sale":
-        return <CreateSale onNavigate={setActiveSection} />
-      case "providers":
-        return <ProvidersView />
-      case "admin":
-        return <AdminView />
-      case "profile":
-        return <Profile />
-      default:
-        return <DashboardView />
-    }
-  }
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background print:bg-white">
         <div className="print:hidden">
-          <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+          <Sidebar />
         </div>
         <main className="flex min-h-screen flex-col lg:pl-72 print:pl-0">
-          {/* HEADER / TOPBAR */}
-          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-2 border-b border-border/40 bg-background/40 px-4 backdrop-blur-md sm:px-6 lg:px-8 print:hidden">
-            <NotificationBell onNavigate={setActiveSection} />
+          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-3 border-b border-border/40 bg-background/40 px-4 backdrop-blur-md sm:px-6 lg:px-8 print:hidden">
+            <NotificationBell />
+            <button 
+              onClick={() => navigate("/trash")}
+              className="relative p-2 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-300 outline-none"
+              title="Papelera de Reciclaje"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -87,15 +65,15 @@ export default function Home() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-border/50" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="cursor-pointer rounded-lg focus:bg-primary/20 focus:text-primary"
-                  onClick={() => setActiveSection("profile")}
+                  onClick={() => navigate("/profile")}
                 >
                   <User className="mr-2 h-4 w-4" />
                   <span>Mi Perfil</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-border/50" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 rounded-lg"
                   onClick={handleLogout}
                 >
@@ -106,8 +84,22 @@ export default function Home() {
             </DropdownMenu>
           </header>
 
-          {/* MAIN CONTENT AREA */}
-          <div className="flex-1 px-4 py-8 lg:px-8 print:p-0 print:m-0">{renderContent()}</div>
+          <div className="flex-1 px-4 py-8 lg:px-8 print:p-0 print:m-0">
+            <Routes>
+              <Route index element={<DashboardView />} />
+              <Route path="events" element={<EventsView />} />
+              <Route path="crm" element={<CRMView />} />
+              <Route path="inventory" element={<InventoryView />} />
+              <Route path="hr" element={<HRView />} />
+              <Route path="sales" element={<SalesList />} />
+              <Route path="sales/new" element={<CreateSale />} />
+              <Route path="providers" element={<ProvidersView />} />
+              <Route path="admin" element={<AdminView />} />
+              <Route path="trash" element={<TrashView />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
         </main>
       </div>
     </ProtectedRoute>

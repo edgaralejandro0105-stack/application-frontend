@@ -1,15 +1,15 @@
 {
-  "short_name": "CoreUI-React",
-  "name": "CoreUI-React sample",
+  "short_name": "La Casona",
+  "name": "La Casona - Sistema de Gestión de Eventos",
   "icons": [
     {
-      "src": "./assets/img/favicon.png",
+      "src": "./logo.png",
       "sizes": "100x100",
       "type": "image/png"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
+  "theme_color": "#1d3557",
   "background_color": "#ffffff"
 }

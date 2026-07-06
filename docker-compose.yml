@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "3001:80"
+    environment:
+      - VITE_API_URL=http://backend:3000/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    image: lacasona-backend:latest
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

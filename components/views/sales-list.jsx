@@ -1,5 +1,5 @@
-"use client";
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Receipt,
   Plus,
@@ -38,7 +38,8 @@ import {
   Cell
 } from "recharts";
 
-export function SalesList({ onNavigate }) {
+export function SalesList() {
+  const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -208,7 +209,7 @@ export function SalesList({ onNavigate }) {
             {isExporting ? "Generando..." : "Generar PDF"}
           </Button>
           <Button
-            onClick={() => onNavigate("create-sale")}
+            onClick={() => navigate("/sales/new")}
             className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
           >
             <Plus className="mr-2 h-4 w-4" />

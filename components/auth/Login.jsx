@@ -1,4 +1,3 @@
-"use client";
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -197,7 +196,7 @@ export function Login() {
                   /* Alternamos dinámicamente entre 'text' y 'password' */
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
-                  placeholder="••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   /* pr-12 para dejar espacio al ícono del ojo a la derecha */
                   className={`flex h-12 w-full rounded-xl border bg-transparent px-4 py-2 pr-12 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 ${errors.password ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-input"
                     }`}

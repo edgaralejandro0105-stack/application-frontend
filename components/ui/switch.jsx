@@ -1,4 +1,3 @@
-"use client";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";
 function Switch({
