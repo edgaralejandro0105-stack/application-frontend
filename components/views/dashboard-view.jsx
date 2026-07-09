@@ -234,9 +234,14 @@ export function DashboardView() {
           setStaffRolesData(Object.entries(roleDistribution).map(([name, value]) => ({ name, value })));
         }
 
-        // Map upcoming events
+        // Map upcoming events - only future events
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
         const upcoming = eventsList
-          .filter((e) => e.status !== "Finished" && e.status !== "Cancelled")
+          .filter((e) => {
+            const eventDate = getSafeDate(e.start_date || e.date);
+            return e.status !== "Finished" && e.status !== "Cancelled" && eventDate >= now;
+          })
           .sort((a, b) => getSafeDate(a.start_date || a.date).getTime() - getSafeDate(b.start_date || b.date).getTime())
           .slice(0, 5);
         setUpcomingEvents(upcoming);
