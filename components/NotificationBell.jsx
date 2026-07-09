@@ -1,18 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSocket } from '@/context/SocketContext';
+import { io } from 'socket.io-client';
 import { Bell, Check, Info } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { apiClient, extractList } from '@/lib/api-client';
 
-export function NotificationBell() {
-  const navigate = useNavigate();
+export function NotificationBell({ onNavigate }) {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
-  const { socket, isConnected } = useSocket();
-
+  const [socketStatus, setSocketStatus] = useState('disconnected');
+  
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const loadNotifications = useCallback(async () => {
@@ -48,41 +46,66 @@ export function NotificationBell() {
 
   useEffect(() => {
     loadNotifications();
-  }, [loadNotifications]);
 
-  useEffect(() => {
-    if (!socket) return;
+    let backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    if (backendUrl.endsWith('/api')) {
+      backendUrl = backendUrl.slice(0, -4);
+    }
+    const socket = io(backendUrl, {
+      withCredentials: true,
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
 
-    const handleNewReservation = (data) => {
-      let dateStr = 'fecha por confirmar';
-      if (data?.event_date) {
-        const parts = data.event_date.split('-');
-        if (parts.length === 3) {
-          dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        } else {
-          dateStr = new Date(data.event_date).toLocaleDateString();
+    socket.on('connect', () => {
+      console.log('Socket conectado al backend para notificaciones');
+      setSocketStatus('connected');
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('Error de conexión socket:', err.message);
+      setSocketStatus('error');
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Socket desconectado:', reason);
+      setSocketStatus(reason === 'io server disconnect' ? 'disconnected' : 'error');
+    });
+
+      socket.on('new_reservation', (data) => {
+        let dateStr = 'fecha por confirmar';
+        if (data?.event_date) {
+          const parts = data.event_date.split('-');
+          if (parts.length === 3) {
+            dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          } else {
+            dateStr = new Date(data.event_date).toLocaleDateString();
+          }
         }
-      }
+        
+        const newNotif = {
+          id: data?.id || Date.now(),
+          type: 'reservation',
+          title: 'Nueva Pre-reserva',
+          message: `Evento programado para ${dateStr}`,
+          date: new Date(),
+          read: false
+        };
 
-      const newNotif = {
-        id: data?.id || Date.now(),
-        type: 'reservation',
-        title: 'Nueva Pre-reserva',
-        message: `Evento programado para ${dateStr}`,
-        date: new Date(),
-        read: false
-      };
+        setNotifications(prev => [newNotif, ...prev]);
 
-      setNotifications(prev => [newNotif, ...prev]);
-
-      apiClient.post('/notifications', {
-        title: 'Nueva Pre-reserva',
-        message: `Evento programado para ${dateStr}`,
-        type: 'reservation'
+        // Persistir la notificación en el backend para que sobreviva a recargas
+        apiClient.post('/notifications', {
+          title: 'Nueva Pre-reserva',
+          message: `Evento programado para ${dateStr}`,
+          type: 'reservation'
+        });
       });
-    };
 
-    const handleNewNotification = (data) => {
+    socket.on('new_notification', (data) => {
       setNotifications(prev => {
         if (prev.some(n => n.id === data.id)) return prev;
         return [{
@@ -94,19 +117,16 @@ export function NotificationBell() {
           read: data.read || false
         }, ...prev];
       });
-    };
-
-    socket.on('new_reservation', handleNewReservation);
-    socket.on('new_notification', handleNewNotification);
+    });
 
     return () => {
-      socket.off('new_reservation', handleNewReservation);
-      socket.off('new_notification', handleNewNotification);
+      socket.disconnect();
     };
-  }, [socket]);
+  }, [loadNotifications]);
 
-  // Polling periódico como respaldo
+  // Polling periódico SIEMPRE (respaldo por si el socket falla)
   useEffect(() => {
+    loadNotifications();
     const interval = setInterval(() => {
       loadNotifications();
     }, 15000);
@@ -116,46 +136,50 @@ export function NotificationBell() {
   const handleOpenChange = (open) => {
     setIsOpen(open);
     if (open && unreadCount > 0) {
+      // Marcar todas como leídas
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     }
     if (open) {
+      // Refrescar al abrir el popover
       loadNotifications();
     }
   };
 
   const handleNotificationClick = (notif) => {
     setIsOpen(false);
-    navigate("/events");
+    if (onNavigate) {
+      onNavigate("events");
+    }
   };
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <button
+        <button 
           className="relative flex items-center justify-center p-2 rounded-xl outline-none hover:bg-accent/20 transition-colors"
           aria-label="Notificaciones"
-          title={isConnected ? 'Notificaciones en tiempo real' : 'Usando modo de respaldo...'}
+          title={socketStatus === 'connected' ? 'Notificaciones en tiempo real' : socketStatus === 'error' ? 'Error de conexión - usando respaldo' : 'Reconectando...'}
         >
-          <Bell className={`h-5 w-5 transition-colors ${!isConnected ? 'text-red-500/80' : 'text-foreground/80'}`} />
+          <Bell className={`h-5 w-5 transition-colors ${socketStatus === 'error' ? 'text-red-500/80' : 'text-foreground/80'}`} />
           {unreadCount > 0 && (
             <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-background animate-in zoom-in">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
-          {unreadCount === 0 && !isConnected && (
+          {unreadCount === 0 && socketStatus === 'error' && (
             <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background" />
           )}
         </button>
       </PopoverTrigger>
-
+      
       <PopoverContent align="end" className="w-80 p-0 rounded-xl border-border/50 bg-popover/95 backdrop-blur-md shadow-lg overflow-hidden z-50">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/20">
           <h4 className="font-semibold text-sm">Notificaciones</h4>
           <div className="flex items-center gap-2">
-            {!isConnected && (
+            {socketStatus !== 'connected' && (
               <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                Respaldo
+                <span className={`h-1.5 w-1.5 rounded-full ${socketStatus === 'error' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                {socketStatus === 'error' ? 'Sin conexión' : 'Reconectando'}
               </span>
             )}
             <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
@@ -163,7 +187,7 @@ export function NotificationBell() {
             </span>
           </div>
         </div>
-
+        
         <ScrollArea className="h-[300px] overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-12 text-center">
@@ -177,7 +201,7 @@ export function NotificationBell() {
             <div className="flex flex-col">
               {notifications.map((notif, index) => (
                 <button
-                  key={`${notif.id}-${index}`}
+                  key={`${notif.id}-${index}`} 
                   onClick={() => handleNotificationClick(notif)}
                   className={cn(
                     "flex gap-3 p-4 border-b border-border/40 hover:bg-muted/50 transition-colors w-full text-left outline-none",

@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import {
   UserCog,
@@ -25,7 +26,6 @@ import { Label } from "@/components/ui/label";
 import { employeeService } from "@/lib/services/employee.service";
 import { reportService } from "@/lib/services/report.service";
 import { extractList } from "@/lib/api-client";
-import { toast } from "sonner";
 
 const departments = ["Todos", "Administrador", "Bartender", "Mesero", "Gerente", "Seguridad", "Cajero"];
 
@@ -130,7 +130,7 @@ export function HRView() {
       setNewEmployeeData({ first_name: "", last_name: "", email: "", phone: "", rol: "", salary_per_event: "", status: "active" });
       loadData();
     } catch (err) {
-      toast.error("Error al crear empleado: " + err.message);
+      alert("Error al crear empleado: " + err.message);
     }
   };
 
@@ -146,21 +146,20 @@ export function HRView() {
       setSelectedEmployee({ ...selectedEmployee, ...payload });
       loadData();
     } catch (err) {
-      toast.error("Error al actualizar empleado: " + err.message);
+      alert("Error al actualizar empleado: " + err.message);
     }
   };
 
   const handleDeleteEmployee = async () => {
-    if (window.confirm("¿Estás seguro de que deseas mover este empleado a la papelera? Podrás restaurarlo durante los próximos 30 días.")) {
+    if (window.confirm("¿Estás seguro de que deseas eliminar este empleado? Esta acción no se puede deshacer.")) {
       try {
         const response = await employeeService.delete(selectedEmployee.employee_id);
         if (response.error) throw new Error(response.error);
         setSelectedEmployee(null);
         loadData();
-        toast.success("Empleado movido a la papelera exitosamente");
-    } catch (err) {
-      toast.error("Error al eliminar empleado: " + err.message);
-    }
+      } catch (err) {
+        alert("Error al eliminar empleado: " + err.message);
+      }
     }
   };
 
@@ -432,63 +431,63 @@ export function HRView() {
         </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40">
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1d3557]">
+                <UserCog className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
+                <p className="text-2xl font-bold text-foreground">
                   {employees.length}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 mt-1 sm:mt-0">Empleados totales</p>
-              </div>
-              <div className="flex shrink-0 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#1d3557]">
-                <UserCog className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                <p className="text-sm text-muted-foreground">Empleados totales</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40">
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#6b705c]">
+                <BadgeCheck className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
+                <p className="text-2xl font-bold text-foreground">
                   {employees.filter((e) => e.status === "active").length}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 mt-1 sm:mt-0">Activos</p>
-              </div>
-              <div className="flex shrink-0 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#6b705c]">
-                <BadgeCheck className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                <p className="text-sm text-muted-foreground">Activos</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40">
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#d4a574]">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
+                <p className="text-2xl font-bold text-foreground">
                   {employees.filter((e) => e.status === "inactive" || e.status === "suspended").length}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 mt-1 sm:mt-0">De baja / Inactivos</p>
-              </div>
-              <div className="flex shrink-0 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#d4a574]">
-                <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                <p className="text-sm text-muted-foreground">De baja / Inactivos</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40">
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c05c3c]">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
+                <p className="text-2xl font-bold text-foreground">
                   {upcomingAssignments.length}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 mt-1 sm:mt-0">Próximas asignaciones</p>
-              </div>
-              <div className="flex shrink-0 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#c05c3c]">
-                <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                <p className="text-sm text-muted-foreground">Próximas asignaciones</p>
               </div>
             </div>
           </CardContent>

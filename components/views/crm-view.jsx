@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import {
   Users,
@@ -319,7 +320,7 @@ export function CRMView() {
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <Clock className="h-3 w-3" />
                             {ev.status || "Programado"}
-                            {(ev.Venues && ev.Venues.length > 0) ? ` â€¢ ${ev.Venues.map(v => v.name).join(', ')}` : (ev.Venue?.name ? ` â€¢ ${ev.Venue.name}` : '')}
+                            {(ev.Venues && ev.Venues.length > 0) ? ` • ${ev.Venues.map(v => v.name).join(', ')}` : (ev.Venue?.name ? ` • ${ev.Venue.name}` : '')}
                           </p>
                         </div>
                       </div>
@@ -344,7 +345,7 @@ export function CRMView() {
                 </div>
                 <h3 className="text-xl font-bold text-foreground">¿Eliminar Cliente?</h3>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Estás a punto de mover a la papelera a <strong>{displayName}</strong>. Podrás restaurarlo durante los próximos 30 días en la Papelera de Reciclaje.
+                  Estás a punto de eliminar a <strong>{displayName}</strong>. Esta acción no se puede deshacer y podría afectar el historial de ventas y eventos vinculados.
                 </p>
               </div>
               <div className="p-4 flex gap-3 bg-background">
@@ -409,31 +410,31 @@ export function CRMView() {
         </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card className="rounded-2xl border border-white/10 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-white/20">
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">{totalItems}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium uppercase tracking-wider line-clamp-1 mt-1 sm:mt-0">Total Clientes</p>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#6b705c]">
+                <Users className="h-6 w-6 text-white" />
               </div>
-              <div className="flex shrink-0 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#6b705c]">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <div>
+                <p className="text-2xl font-bold text-foreground">{totalItems}</p>
+                <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Total Clientes</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="rounded-2xl border border-white/10 bg-card/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-white/20">
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c05c3c]">
+                <MapPin className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
+                <p className="text-2xl font-bold text-foreground">
                   {clients.filter((c) => c.status === "Active" || !c.status).length}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium uppercase tracking-wider line-clamp-1 mt-1 sm:mt-0">Clientes Activos</p>
-              </div>
-              <div className="flex shrink-0 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#c05c3c]">
-                <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Clientes Activos</p>
               </div>
             </div>
           </CardContent>

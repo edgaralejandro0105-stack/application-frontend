@@ -1,3 +1,4 @@
+"use client";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 const AuthContext = createContext(void 0);
 export function AuthProvider({ children }) {
@@ -72,7 +73,7 @@ export function AuthProvider({ children }) {
   if (!ready) {
     return <div className="min-h-screen grid place-items-center bg-background text-foreground">
         <div className="rounded-xl border border-border bg-muted px-6 py-8 text-center shadow-sm">
-          <p className="text-sm font-medium">Inicializando sesiÃ³n...</p>
+          <p className="text-sm font-medium">Inicializando sesión...</p>
         </div>
       </div>;
   }

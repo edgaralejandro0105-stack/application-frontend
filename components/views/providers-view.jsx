@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { 
   User, CheckCircle2, XCircle, Truck, Download, Loader2, SlidersHorizontal, Search, Plus,
@@ -142,13 +143,13 @@ export function ProvidersView() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("¿Estás seguro de que deseas mover este proveedor a la papelera? Podrás restaurarlo durante los próximos 30 días.")) return;
+    if (!confirm("¿Estás seguro de que deseas desactivar este proveedor?")) return;
     try {
       const res = await providerService.delete(id);
       if (res.error) {
         toast.error(`Error: ${res.error}`);
       } else {
-        toast.success("Proveedor movido a la papelera exitosamente");
+        toast.success("Proveedor desactivado");
         loadProviders();
       }
     } catch (err) {

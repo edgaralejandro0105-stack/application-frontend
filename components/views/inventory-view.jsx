@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import {
   Package,
@@ -23,7 +24,6 @@ import { Label } from "@/components/ui/label";
 import { productService } from "@/lib/services/product.service";
 import { inventorybarService } from "@/lib/services/inventorybar.service";
 import { reportService } from "@/lib/services/report.service";
-import { toast } from "sonner";
 const categoryIcons = {
   Licores: Wine,
   Cervezas: Wine,
@@ -203,7 +203,7 @@ export function InventoryView() {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     if (!productName || !productCategory || !productUnit) {
-      toast.error("Por favor completa todos los campos obligatorios.");
+      alert("Please fill in all required fields.");
       return;
     }
     const formData = new FormData();
@@ -225,34 +225,33 @@ export function InventoryView() {
         res = await productService.create(formData);
       }
       if (res.error) {
-        toast.error(`Error al guardar el producto: ${res.error}`);
+        alert(`Error al guardar el producto: ${res.error}`);
       } else {
         setProductModalOpen(false);
         loadData();
       }
     } catch (err) {
-      toast.error(`Error: ${err.message}`);
+      alert(`Error: ${err.message}`);
     }
   };
   const handleDeleteProduct = async (productId) => {
-    if (!confirm("¿Estás seguro de que deseas mover este producto a la papelera? Podrás restaurarlo durante los próximos 30 días.")) return;
+    if (!confirm("\xBFEst\xE1s seguro de que deseas eliminar este producto?")) return;
     try {
       const res = await productService.delete(productId);
       if (res.error) {
-        toast.error(`Error al eliminar el producto: ${res.error}`);
+        alert(`Error al eliminar el producto: ${res.error}`);
       } else {
-        toast.success("Producto movido a la papelera exitosamente");
         loadData();
       }
     } catch (err) {
-      toast.error(`Error de red: ${err.message}`);
+      alert(`Network error: ${err.message}`);
     }
   };
   const handleMovementSubmit = async (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
     if (movementQuantity <= 0) {
-      toast.error("La cantidad debe ser mayor que 0.");
+      alert("La cantidad debe ser mayor que 0.");
       return;
     }
     if (movementType === "Exit" && (selectedProduct.current_stock || 0) < movementQuantity) {
@@ -269,13 +268,13 @@ export function InventoryView() {
     try {
       const res = await inventorybarService.create(payload);
       if (res.error) {
-        toast.error(`Error al registrar el movimiento: ${res.error}`);
+        alert(`Error al registrar el movimiento: ${res.error}`);
       } else {
         setMovementModalOpen(false);
         loadData();
       }
     } catch (err) {
-      toast.error(`Error de red: ${err.message}`);
+      alert(`Network error: ${err.message}`);
     }
   };
 

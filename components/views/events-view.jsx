@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { useForm } from "react-hook-form";
@@ -352,12 +353,12 @@ export function EventsView() {
   };
 
   const handleDeleteEvent = async (event) => {
-    if (confirm("¿Estás seguro de que deseas mover este evento a la papelera? (Se puede restaurar durante 30 días)")) {
+    if (confirm("¿Estás seguro de que deseas eliminar este evento?")) {
       try {
         const id = event.event_id || event.id;
         const res = await eventService.delete(id);
         if (res && res.error) throw new Error(res.error);
-        toast.success("Evento movido a la papelera exitosamente");
+        toast.success("Evento eliminado exitosamente");
         loadData();
       } catch (err) {
         toast.error(err.message || "Error al eliminar el evento");

@@ -1,5 +1,5 @@
+"use client";
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,8 +32,7 @@ const saleSchema = z.object({
   discount: z.number().min(0).optional()
 });
 
-export function CreateSale() {
-  const navigate = useNavigate();
+export function CreateSale({ onNavigate }) {
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [events, setEvents] = useState([]);
@@ -206,7 +205,7 @@ export function CreateSale() {
         <div className="flex items-center gap-4">
           <Button 
             variant="outline" 
-            onClick={() => navigate("/sales")}
+            onClick={() => onNavigate("sales")}
             className="rounded-xl border-border hover:bg-muted/50 transition-all"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -260,7 +259,7 @@ export function CreateSale() {
                         </p>
                         <p className="text-xs text-muted-foreground mt-1 flex justify-center gap-2">
                           <span>Stock: {product.current_stock ?? 0}</span>
-                          <span>â€¢</span>
+                          <span>•</span>
                           <span className="font-medium text-[#6b705c]">${Number(product.unit_price || 0).toFixed(2)}</span>
                         </p>
                       </div>
@@ -419,7 +418,7 @@ export function CreateSale() {
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Referencia (Opcional)</Label>
                   <Input 
                     {...register("reference")}
-                    placeholder="NÂ° de transacción o detalle"
+                    placeholder="N° de transacción o detalle"
                     className="rounded-xl bg-background border-input focus:ring-2 focus:ring-[#c05c3c]"
                   />
                 </div>
