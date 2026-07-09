@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Package,
   Plus,
@@ -15,7 +15,8 @@ import {
   Loader2,
   SlidersHorizontal,
   Filter,
-  RefreshCw
+  RefreshCw,
+  ImageIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,9 @@ export function InventoryView() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("catalog");
   const [productImage, setProductImage] = useState(null);
+  const [productImagePreview, setProductImagePreview] = useState(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const fileInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -178,6 +182,8 @@ export function InventoryView() {
     setProductMinStock("");
     setProductPrice("");
     setProductImage(null);
+    setProductImagePreview(null);
+    setFileInputKey(prev => prev + 1);
     setProductModalOpen(true);
   };
   const openEditProductModal = (product) => {
@@ -191,6 +197,8 @@ export function InventoryView() {
     setProductMinStock(product.min_stock ?? "");
     setProductPrice(product.unit_price || "");
     setProductImage(null);
+    setProductImagePreview(product.image_url || null);
+    setFileInputKey(prev => prev + 1);
     setProductModalOpen(true);
   };
   const openMovementModal = (product) => {
@@ -540,13 +548,22 @@ export function InventoryView() {
     >
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div
-      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isLowStock ? "bg-[#c05c3c]/10" : "bg-[#1d3557]/10"}`}
-    >
-                                  <IconComponent
-      className={`h-5 w-5 ${isLowStock ? "text-[#c05c3c]" : "text-[#1d3557]"}`}
-    />
-                                </div>
+                                {product.image_url ? (
+                                  <img
+                                    src={product.image_url}
+                                    alt={product.name}
+                                    className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div
+                                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isLowStock ? "bg-[#c05c3c]/10" : "bg-[#1d3557]/10"}`}
+                                  >
+                                    <IconComponent
+                                      className={`h-5 w-5 ${isLowStock ? "text-[#c05c3c]" : "text-[#1d3557]"}`}
+                                    />
+                                  </div>
+                                )}
                                 <div>
                                   <p className="flex items-center gap-2 font-semibold text-foreground">
                                     {product.name}
@@ -1027,11 +1044,47 @@ export function InventoryView() {
               <div>
                 <Label className="text-sm font-semibold">Imagen del producto (Opcional)</Label>
                 <Input
+    key={fileInputKey}
     type="file"
     accept="image/*"
-    onChange={(e) => setProductImage(e.target.files[0])}
+    ref={fileInputRef}
+    onChange={(e) => {
+      const file = e.target.files[0];
+      setProductImage(file);
+      if (file) {
+        setProductImagePreview(URL.createObjectURL(file));
+      }
+    }}
     className="mt-1 rounded-xl cursor-pointer"
   />
+                {productImagePreview ? (
+                  <div className="mt-2 relative">
+                    <img
+                      src={productImagePreview}
+                      alt="Vista previa"
+                      className="w-full h-40 object-cover rounded-xl border border-border"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductImage(null);
+                        setProductImagePreview(null);
+                        setFileInputKey(prev => prev + 1);
+                      }}
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : isEditingProduct ? (
+                  <div className="mt-2 flex items-center justify-center h-20 rounded-xl border border-dashed border-border bg-muted/30">
+                    <div className="text-center text-muted-foreground">
+                      <ImageIcon className="h-6 w-6 mx-auto mb-1 opacity-40" />
+                      <p className="text-xs">Sin imagen</p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex gap-3 pt-4">
