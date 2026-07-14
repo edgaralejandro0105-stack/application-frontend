@@ -250,8 +250,19 @@ export function CreateSale({ onNavigate }) {
                     className="cursor-pointer rounded-2xl border border-white/10 bg-card/40 backdrop-blur-sm transition-all duration-200 hover:-translate-y-1 hover:bg-card/60 hover:shadow-lg hover:border-white/20"
                   >
                     <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1d3557]/10 border border-[#1d3557]/20">
-                        <ShoppingCart className="h-5 w-5 text-[#1d3557]" />
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="h-20 w-20 rounded-xl object-cover border border-white/10"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.querySelector('.fallback-icon')?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`${product.image_url ? 'hidden' : ''} fallback-icon flex h-20 w-20 items-center justify-center rounded-xl bg-[#1d3557]/10 border border-[#1d3557]/20`}>
+                        <ShoppingCart className="h-8 w-8 text-[#1d3557]" />
                       </div>
                       <div>
                         <p className="font-semibold text-sm leading-tight text-foreground line-clamp-2">
