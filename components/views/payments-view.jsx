@@ -7,7 +7,9 @@ import {
   Wallet,
   Calendar,
   Search,
-  ExternalLink
+  ExternalLink,
+  Filter,
+  X
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { paymentService } from "@/lib/services/payment.service";
@@ -30,6 +32,8 @@ const methodColors = {
   "Pago Móvil": "bg-[#f472b6]/10 text-[#f472b6]"
 };
 
+const methods = ["", "Efectivo", "Zelle", "Transferencia", "Punto de Venta", "Pago Móvil"];
+
 export function PaymentsView() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,15 +42,35 @@ export function PaymentsView() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
 
+  // Filter states
+  const [methodFilter, setMethodFilter] = useState("");
+  const [originFilter, setOriginFilter] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+
+  const buildParams = (pageNum) => {
+    const params = { page: pageNum, limit: 15 };
+    if (methodFilter) params.method = methodFilter;
+    if (originFilter === "web") params.simulated = "true";
+    if (originFilter === "pos") params.simulated = "false";
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (minAmount) params.minAmount = minAmount;
+    if (maxAmount) params.maxAmount = maxAmount;
+    return params;
+  };
+
   useEffect(() => {
     loadPayments();
-  }, [page]);
+  }, [page, methodFilter, originFilter, startDate, endDate, minAmount, maxAmount]);
 
   const loadPayments = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await paymentService.getAll({ page, limit: 15 });
+      const res = await paymentService.getAll(buildParams(page));
       if (res.error) throw new Error(res.error);
       setPayments(res.data.data || []);
       setTotalPages(res.data.totalPages || 1);
@@ -57,6 +81,19 @@ export function PaymentsView() {
       setLoading(false);
     }
   };
+
+  const clearFilters = () => {
+    setMethodFilter("");
+    setOriginFilter("");
+    setStartDate("");
+    setEndDate("");
+    setMinAmount("");
+    setMaxAmount("");
+    setSearch("");
+    setPage(1);
+  };
+
+  const hasFilters = methodFilter || originFilter || startDate || endDate || minAmount || maxAmount;
 
   const getSafeDate = (dateStr) => {
     if (!dateStr) return new Date();
@@ -69,7 +106,7 @@ export function PaymentsView() {
         const query = search.toLowerCase();
         const eventName = p.Sale?.Event?.title || "";
         const clientName = `${p.Sale?.Event?.Client?.name || ""} ${p.Sale?.Event?.Client?.last_name || ""}`;
-        return eventName.toLowerCase().includes(query) || clientName.toLowerCase().includes(query) || p.method.toLowerCase().includes(query);
+        return eventName.toLowerCase().includes(query) || clientName.toLowerCase().includes(query) || (p.method || "").toLowerCase().includes(query);
       })
     : payments;
 
@@ -103,6 +140,71 @@ export function PaymentsView() {
           />
         </div>
       </div>
+
+      {/* Filters */}
+      <Card className="rounded-2xl border border-white/20 bg-card/60 backdrop-blur-md shadow-lg">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Filtros</span>
+            {hasFilters && (
+              <button onClick={clearFilters} className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-400 transition-colors">
+                <X className="h-3 w-3" />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <select
+              value={methodFilter}
+              onChange={(e) => { setMethodFilter(e.target.value); setPage(1); }}
+              className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#8b5cf6]/50 focus:ring-1 focus:ring-[#8b5cf6]/30 transition-all"
+            >
+              <option value="">Todos los métodos</option>
+              {methods.filter(Boolean).map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <select
+              value={originFilter}
+              onChange={(e) => { setOriginFilter(e.target.value); setPage(1); }}
+              className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#8b5cf6]/50 focus:ring-1 focus:ring-[#8b5cf6]/30 transition-all"
+            >
+              <option value="">Todos los orígenes</option>
+              <option value="web">Web</option>
+              <option value="pos">POS / Local</option>
+            </select>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+              className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#8b5cf6]/50 focus:ring-1 focus:ring-[#8b5cf6]/30 transition-all"
+              placeholder="Desde"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+              className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#8b5cf6]/50 focus:ring-1 focus:ring-[#8b5cf6]/30 transition-all"
+              placeholder="Hasta"
+            />
+            <input
+              type="number"
+              value={minAmount}
+              onChange={(e) => { setMinAmount(e.target.value); setPage(1); }}
+              placeholder="Monto mín."
+              className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#8b5cf6]/50 focus:ring-1 focus:ring-[#8b5cf6]/30 transition-all"
+            />
+            <input
+              type="number"
+              value={maxAmount}
+              onChange={(e) => { setMaxAmount(e.target.value); setPage(1); }}
+              placeholder="Monto máx."
+              className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#8b5cf6]/50 focus:ring-1 focus:ring-[#8b5cf6]/30 transition-all"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
         <div className="rounded-3xl border border-red-500/20 bg-red-950/60 p-4 text-red-100 shadow-[0_15px_40px_-30px_rgba(251,113,133,0.85)]">
