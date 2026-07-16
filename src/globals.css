@@ -6,9 +6,9 @@
 :root {
   --background: #f5f0eb;
   --foreground: #1a1a2e;
-  --card: #fdfaf7;
+  --card: #f2ebe2;
   --card-foreground: #1a1a2e;
-  --popover: #fdfaf7;
+  --popover: #f2ebe2;
   --popover-foreground: #1a1a2e;
   --primary: #8b5cf6;
   --primary-foreground: #ffffff;
@@ -29,13 +29,13 @@
   --chart-3: #f472b6;
   --chart-4: #38bdf8;
   --chart-5: #facc15;
-  --sidebar: #fdfaf7;
+  --sidebar: #e8dfd4;
   --sidebar-foreground: #1a1a2e;
   --sidebar-primary: #8b5cf6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ece4db;
+  --sidebar-accent: #ddd1c2;
   --sidebar-accent-foreground: #1a1a2e;
-  --sidebar-border: #d6cdc2;
+  --sidebar-border: #ccc0b0;
   --sidebar-ring: #8b5cf6;
   --bg-gradient-from: #f5f0eb;
   --bg-gradient-via: #ede5dc;
