@@ -178,7 +178,8 @@ export function CRMView() {
     
     setIsDeleting(true);
     try {
-      await clientService.delete(idToDelete);
+      const res = await clientService.delete(idToDelete);
+      if (res && res.error) throw new Error(res.error);
       toast.success("Cliente eliminado exitosamente");
       setDeleteModalOpen(false);
       setSelectedClient(null);

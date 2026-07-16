@@ -349,7 +349,7 @@ export function EventsView() {
   const handleAcceptEvent = async (event) => {
     try {
       const id = event.event_id || event.id;
-      const res = await eventService.update(id, { ...event, status: 'Confirmed' });
+      const res = await eventService.update(id, { status: 'Confirmed' });
       if (res && res.error) throw new Error(res.error);
       toast.success("Evento aceptado y confirmado");
       loadData();
