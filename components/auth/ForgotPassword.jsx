@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
-import emailjs from '@emailjs/browser';
 
 import { authService } from "@/lib/services/auth.service";
 
@@ -37,29 +36,9 @@ export function ForgotPassword() {
         setApiError(response.error ?? "No se pudo procesar la solicitud. Intenta nuevamente.");
         return;
       }
-
-      // Extraemos el token devuelto por el backend
-      const recoveryToken = response.data?.token || "token-generado-por-backend"; 
-      const resetLink = `${window.location.origin}/reset-password?token=${recoveryToken}`;
-
-      // Preparamos variables para Email.js
-      const templateParams = {
-        user_email: data.email,
-        nombre_usuario: "Usuario", 
-        enlace_recuperacion: resetLink
-      };
-
-      // Configuración de EmailJS para la cuenta lacasonadisco03@gmail.com
-      const SERVICE_ID = "service_j5iskqe"; 
-      const TEMPLATE_ID = "template_r3lgi6a";
-      const PUBLIC_KEY = "9mCO0XjCYXzvIJnED";
-
-      await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
-
       setSuccess(true);
     } catch (error) {
-      console.error("Error al enviar el correo:", error);
-      setApiError("Hubo un error al enviar el correo. Intenta nuevamente.");
+      setApiError("Error de conexión con el servidor.");
     }
   };
 
