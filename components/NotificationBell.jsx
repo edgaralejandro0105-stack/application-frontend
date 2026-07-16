@@ -11,6 +11,7 @@ export function NotificationBell() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [socketStatus, setSocketStatus] = useState('disconnected');
   
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -98,13 +99,6 @@ export function NotificationBell() {
         };
 
         setNotifications(prev => [newNotif, ...prev]);
-
-        // Persistir la notificación en el backend para que sobreviva a recargas
-        apiClient.post('/notifications', {
-          title: 'Nueva Pre-reserva',
-          message: `Evento programado para ${dateStr}`,
-          type: 'reservation'
-        });
       });
 
     socket.on('new_notification', (data) => {
@@ -137,12 +131,11 @@ export function NotificationBell() {
 
   const handleOpenChange = (open) => {
     setIsOpen(open);
-    if (open && unreadCount > 0) {
-      // Marcar todas como leídas
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    }
     if (open) {
-      // Refrescar al abrir el popover
+      setShowAll(false);
+      if (unreadCount > 0) {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      }
       loadNotifications();
     }
   };
@@ -199,7 +192,7 @@ export function NotificationBell() {
             </div>
           ) : (
             <div className="flex flex-col">
-              {notifications.map((notif, index) => (
+              {notifications.slice(0, showAll ? undefined : 5).map((notif, index) => (
                 <button
                   key={`${notif.id}-${index}`} 
                   onClick={() => handleNotificationClick(notif)}
@@ -228,6 +221,14 @@ export function NotificationBell() {
                   </div>
                 </button>
               ))}
+              {notifications.length > 5 && (
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="w-full py-3 text-sm font-medium text-primary hover:bg-muted/50 transition-colors outline-none"
+                >
+                  {showAll ? 'Ver menos' : `Ver más (${notifications.length - 5} restantes)`}
+                </button>
+              )}
             </div>
           )}
         </ScrollArea>
