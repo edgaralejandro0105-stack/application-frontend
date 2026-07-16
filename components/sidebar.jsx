@@ -42,7 +42,8 @@ export function Sidebar() {
   }
       <button
     onClick={() => setMobileOpen(true)}
-    className="fixed left-4 top-4 z-50 rounded-2xl bg-sidebar p-3 text-sidebar-foreground shadow-lg lg:hidden"
+    className="fixed left-4 top-4 z-50 rounded-2xl p-3 text-sidebar-foreground shadow-lg lg:hidden"
+    style={{ background: 'var(--sidebar-gradient)' }}
     aria-label="Open menu"
   >
         <Menu className="h-5 w-5" />
@@ -80,9 +81,10 @@ export function Sidebar() {
   }
       <aside
     className={cn(
-      "fixed left-0 top-0 z-50 flex h-full w-72 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:translate-x-0",
+      "fixed left-0 top-0 z-50 flex h-full w-72 flex-col text-sidebar-foreground transition-transform duration-300 lg:translate-x-0",
       mobileOpen ? "translate-x-0" : "-translate-x-full"
     )}
+    style={{ background: 'var(--sidebar-gradient)' }}
   >
         {
     /* 
