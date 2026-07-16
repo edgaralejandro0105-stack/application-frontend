@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { productService } from "@/lib/services/product.service";
 import { inventorybarService } from "@/lib/services/inventorybar.service";
 import { reportService } from "@/lib/services/report.service";
+import { apiClient } from "@/lib/api-client";
 const categoryIcons = {
   Licores: Wine,
   Cervezas: Wine,
@@ -45,6 +46,7 @@ export function InventoryView() {
   const [productImagePreview, setProductImagePreview] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const fileInputRef = useRef(null);
+  const lowStockNotifiedRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -171,6 +173,23 @@ export function InventoryView() {
     }, 300);
     return () => clearTimeout(timer);
   }, [historyType, historyDateRange, historySearchTerm, historyPage]);
+
+  useEffect(() => {
+    if (loading) return;
+    const count = products.filter((p) => (p.min_stock ?? 0) > 0 && (p.current_stock ?? 0) <= (p.min_stock ?? 0)).length;
+    if (count > 0 && !lowStockNotifiedRef.current) {
+      lowStockNotifiedRef.current = true;
+      apiClient.post('/notifications', {
+        title: 'Alerta de inventario',
+        message: `Hay ${count} producto(s) bajo en stock`,
+        type: 'warning'
+      }).catch(err => console.error('Error al crear notificación de stock bajo:', err));
+    }
+    if (count === 0) {
+      lowStockNotifiedRef.current = false;
+    }
+  }, [products, loading]);
+
   const openAddProductModal = () => {
     setIsEditingProduct(false);
     setSelectedProduct(null);
@@ -210,8 +229,8 @@ export function InventoryView() {
   };
   const handleProductSubmit = async (e) => {
     e.preventDefault();
-    if (!productName || !productCategory || !productUnit) {
-      alert("Please fill in all required fields.");
+    if (!productName || !productCategory || !productUnit || !productMinStock) {
+      alert("Por favor completa todos los campos obligatorios (Nombre, Categoría, Unidad de medida y Stock mínimo).");
       return;
     }
     const formData = new FormData();
@@ -308,7 +327,7 @@ export function InventoryView() {
     return matchesSearch;
   });
 
-  const lowStockProducts = products.filter((p) => (p.current_stock ?? 0) < (p.min_stock ?? 0));
+  const lowStockProducts = products.filter((p) => (p.min_stock ?? 0) > 0 && (p.current_stock ?? 0) <= (p.min_stock ?? 0));
   if (loading && products.length === 0) {
     return <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -540,7 +559,7 @@ export function InventoryView() {
                           No se encontraron productos
                         </td>
                       </tr> : filteredProducts.map((product) => {
-    const isLowStock = (product.current_stock ?? 0) < (product.min_stock ?? 0);
+    const isLowStock = (product.min_stock ?? 0) > 0 && (product.current_stock ?? 0) <= (product.min_stock ?? 0);
     const IconComponent = categoryIcons[product.category] || Package;
     return <tr
       key={product.product_id}
@@ -568,7 +587,7 @@ export function InventoryView() {
                                   <p className="flex items-center gap-2 font-semibold text-foreground">
                                     {product.name}
                                     {isLowStock && <span className="rounded-full bg-[#c05c3c] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white">
-                                        Low Stock
+                                        Bajo Stock
                                       </span>}
                                   </p>
                                 </div>
@@ -1005,13 +1024,14 @@ export function InventoryView() {
               </div>
 
               <div>
-                <Label className="text-sm font-semibold">Stock mínimo</Label>
+                <Label className="text-sm font-semibold">Stock mínimo *</Label>
                 <Input
     type="number"
-    min="0"
+    min="1"
     value={productMinStock}
     onChange={(e) => setProductMinStock(e.target.value === "" ? "" : Number(e.target.value))}
     className="mt-1 rounded-xl"
+    required
   />
               </div>
 

@@ -74,7 +74,7 @@ export function CreateSale() {
         setLoading(true);
         const [productsRes, eventsRes] = await Promise.all([
           productService.getAll({ limit: 100 }),
-          eventService.getAll()
+          eventService.getAll({ upcoming: true })
         ]);
         
         if (!productsRes.error) {

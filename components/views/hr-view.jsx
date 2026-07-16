@@ -17,7 +17,9 @@ import {
   Trash2,
   Download,
   Loader2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  AlertTriangle,
+  Save,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,6 +55,7 @@ export function HRView() {
   const [sortBy, setSortBy] = useState("dateDesc");
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -151,15 +154,18 @@ export function HRView() {
   };
 
   const handleDeleteEmployee = async () => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar este empleado? Esta acción no se puede deshacer.")) {
-      try {
-        const response = await employeeService.delete(selectedEmployee.employee_id);
-        if (response.error) throw new Error(response.error);
-        setSelectedEmployee(null);
-        loadData();
-      } catch (err) {
-        alert("Error al eliminar empleado: " + err.message);
-      }
+    setConfirmDeleteOpen(true);
+  };
+
+  const executeDeleteEmployee = async () => {
+    try {
+      const response = await employeeService.delete(selectedEmployee.employee_id);
+      if (response.error) throw new Error(response.error);
+      setConfirmDeleteOpen(false);
+      setSelectedEmployee(null);
+      loadData();
+    } catch (err) {
+      alert("Error al eliminar empleado: " + err.message);
     }
   };
 
@@ -220,6 +226,7 @@ export function HRView() {
   // VISTA DE PERFIL (Cuando se selecciona un empleado)
   if (selectedEmployee) {
     return (
+      <>
       <div className="space-y-8">
         <Button
           variant="outline"
@@ -393,6 +400,43 @@ export function HRView() {
           </Card>
         </div>
       </div>
+
+      {/* Confirm Delete Modal */}
+      {confirmDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
+          <Card className="w-full max-w-sm rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100">
+                  <AlertTriangle className="h-7 w-7 text-red-500" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Eliminar empleado</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  ¿Estás seguro de que deseas eliminar este empleado? Esta acción no se puede deshacer.
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmDeleteOpen(false)}
+                  className="flex-1 rounded-xl border-border"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={executeDeleteEmployee}
+                  className="flex-1 rounded-xl bg-red-500 text-white hover:bg-red-600"
+                >
+                  Eliminar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      </>
     );
   }
 
@@ -947,6 +991,42 @@ export function HRView() {
                   className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
                 >
                   Crear Empleado
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {confirmDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
+          <Card className="w-full max-w-sm rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100">
+                  <AlertTriangle className="h-7 w-7 text-red-500" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Eliminar empleado</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  ¿Estás seguro de que deseas eliminar este empleado? Esta acción no se puede deshacer.
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmDeleteOpen(false)}
+                  className="flex-1 rounded-xl border-border"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={executeDeleteEmployee}
+                  className="flex-1 rounded-xl bg-red-500 text-white hover:bg-red-600"
+                >
+                  Eliminar
                 </Button>
               </div>
             </CardContent>

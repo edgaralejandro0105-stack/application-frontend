@@ -15,6 +15,7 @@ import {
   Edit,
   Trash2,
   SlidersHorizontal,
+  ImageIcon,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -123,6 +124,7 @@ export function AdminView() {
   const [venueForm, setVenueForm] = useState({ name: "", capacity: "", status: "Available", base_price: "" })
   const [isSavingVenue, setIsSavingVenue] = useState(false)
   const [venueImage, setVenueImage] = useState(null)
+  const [venueImagePreview, setVenueImagePreview] = useState(null)
   const [venuesSearch, setVenuesSearch] = useState("")
   const [venuesFilterStatus, setVenuesFilterStatus] = useState("All")
   const [showVenuesFilters, setShowVenuesFilters] = useState(false)
@@ -134,6 +136,7 @@ export function AdminView() {
   const [serviceForm, setServiceForm] = useState({ name: "", service_type: "", base_price: "", provider_info: "" })
   const [isSavingService, setIsSavingService] = useState(false)
   const [serviceImage, setServiceImage] = useState(null)
+  const [serviceImagePreview, setServiceImagePreview] = useState(null)
   const [servicesSearch, setServicesSearch] = useState("")
   const [servicesFilterType, setServicesFilterType] = useState("All")
   const [showServicesFilters, setShowServicesFilters] = useState(false)
@@ -227,6 +230,7 @@ export function AdminView() {
       base_price: venue.base_price || '',
     })
     setVenueImage(null)
+    setVenueImagePreview(venue.image_url || null)
     setVenueModalOpen(true)
   }
 
@@ -234,6 +238,7 @@ export function AdminView() {
     setEditingVenue(null)
     setVenueForm({ name: '', capacity: '', status: 'Available', base_price: '' })
     setVenueImage(null)
+    setVenueImagePreview(null)
     setVenueModalOpen(true)
   }
 
@@ -287,6 +292,7 @@ export function AdminView() {
       provider_info: service.provider_info || '',
     })
     setServiceImage(null)
+    setServiceImagePreview(service.image_url || null)
     setServiceModalOpen(true)
   }
 
@@ -294,6 +300,7 @@ export function AdminView() {
     setEditingService(null)
     setServiceForm({ name: '', service_type: '', base_price: '', provider_info: '' })
     setServiceImage(null)
+    setServiceImagePreview(null)
     setServiceModalOpen(true)
   }
 
@@ -640,6 +647,20 @@ export function AdminView() {
                     key={venue.venue_id || Math.random()}
                     className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40"
                   >
+                    {venue.image_url ? (
+                      <div className="w-full h-40 overflow-hidden">
+                        <img
+                          src={venue.image_url}
+                          alt={venue.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-40 flex items-center justify-center bg-gradient-to-br from-[#1d3557]/10 to-[#1d3557]/5">
+                        <Building className="h-12 w-12 text-[#1d3557]/30" />
+                      </div>
+                    )}
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1d3557]/20 to-[#1d3557]/5 border border-[#1d3557]/10">
@@ -799,9 +820,18 @@ export function AdminView() {
                           >
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#6b705c]/20 to-[#6b705c]/5 border border-[#6b705c]/10">
-                                  <Briefcase className="h-5 w-5 text-[#6b705c]" />
-                                </div>
+                                {service.image_url ? (
+                                  <img
+                                    src={service.image_url}
+                                    alt={service.name}
+                                    className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#6b705c]/20 to-[#6b705c]/5 border border-[#6b705c]/10">
+                                    <Briefcase className="h-5 w-5 text-[#6b705c]" />
+                                  </div>
+                                )}
                                 <p className="font-medium text-foreground">{service.name}</p>
                               </div>
                             </td>
@@ -949,7 +979,7 @@ export function AdminView() {
       {/* Create Venue Modal */}
       {venueModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
-          <Card className="w-full max-w-md rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
+          <Card className="w-full max-w-md max-h-[95vh] overflow-y-auto rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
             <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
               <CardTitle className="text-xl font-semibold text-foreground">
                 {editingVenue ? 'Editar Salón' : 'Nuevo Salón'}
@@ -1019,9 +1049,42 @@ export function AdminView() {
                 <Input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setVenueImage(e.target.files[0])}
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    setVenueImage(file);
+                    if (file) {
+                      setVenueImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
                   className="rounded-xl border-input cursor-pointer focus:ring-2 focus:ring-[#c05c3c]"
                 />
+                {venueImagePreview ? (
+                  <div className="mt-2 relative">
+                    <img
+                      src={venueImagePreview}
+                      alt="Vista previa"
+                      className="w-full h-40 object-cover rounded-xl border border-border"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVenueImage(null);
+                        setVenueImagePreview(null);
+                      }}
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : editingVenue ? (
+                  <div className="mt-2 flex items-center justify-center h-20 rounded-xl border border-dashed border-border bg-muted/30">
+                    <div className="text-center text-muted-foreground">
+                      <ImageIcon className="h-6 w-6 mx-auto mb-1 opacity-40" />
+                      <p className="text-xs">Sin imagen</p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button
@@ -1052,7 +1115,7 @@ export function AdminView() {
       {/* Create Service Modal */}
       {serviceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
-          <Card className="w-full max-w-md rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
+          <Card className="w-full max-w-md max-h-[95vh] overflow-y-auto rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
             <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
               <CardTitle className="text-xl font-semibold text-foreground">
                 {editingService ? 'Editar Servicio' : 'Nuevo Servicio'}
@@ -1116,9 +1179,42 @@ export function AdminView() {
                 <Input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setServiceImage(e.target.files[0])}
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    setServiceImage(file);
+                    if (file) {
+                      setServiceImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
                   className="rounded-xl border-input cursor-pointer focus:ring-2 focus:ring-[#c05c3c]"
                 />
+                {serviceImagePreview ? (
+                  <div className="mt-2 relative">
+                    <img
+                      src={serviceImagePreview}
+                      alt="Vista previa"
+                      className="w-full h-40 object-cover rounded-xl border border-border"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setServiceImage(null);
+                        setServiceImagePreview(null);
+                      }}
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : editingService ? (
+                  <div className="mt-2 flex items-center justify-center h-20 rounded-xl border border-dashed border-border bg-muted/30">
+                    <div className="text-center text-muted-foreground">
+                      <ImageIcon className="h-6 w-6 mx-auto mb-1 opacity-40" />
+                      <p className="text-xs">Sin imagen</p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button
