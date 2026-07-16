@@ -37,8 +37,6 @@
   --sidebar-accent-foreground: #1a1a2e;
   --sidebar-border: #ccc0b0;
   --sidebar-ring: #8b5cf6;
-  --sidebar-gradient: linear-gradient(180deg, #e8dfd4 0%, #dacfc0 100%);
-  --header-gradient: linear-gradient(90deg, rgba(139,92,246,0.06) 0%, transparent 50%, rgba(244,114,182,0.06) 100%);
   --bg-gradient-from: #f5f0eb;
   --bg-gradient-via: #ede5dc;
   --bg-gradient-to: #f5f0eb;
@@ -77,8 +75,6 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(139, 92, 246, 0.3);
   --sidebar-ring: #8b5cf6;
-  --sidebar-gradient: linear-gradient(180deg, rgba(7,12,28,0.95) 0%, rgba(10,14,32,0.98) 100%);
-  --header-gradient: linear-gradient(90deg, rgba(139,92,246,0.10) 0%, transparent 50%, rgba(244,114,182,0.10) 100%);
   --bg-gradient-from: #050816;
   --bg-gradient-via: #060b17;
   --bg-gradient-to: #050816;

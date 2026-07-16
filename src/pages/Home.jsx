@@ -42,7 +42,7 @@ export default function Home() {
         </div>
         <main className="flex min-h-screen flex-col lg:pl-72 print:pl-0">
           {/* HEADER / TOPBAR */}
-          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-2 border-b border-border/40 px-4 backdrop-blur-md sm:px-6 lg:px-8 print:hidden" style={{ background: 'var(--header-gradient)' }}>
+          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-2 border-b border-border/40 bg-gradient-to-r from-primary/[0.04] via-background/50 to-accent/[0.04] px-4 backdrop-blur-md sm:px-6 lg:px-8 print:hidden">
             <NotificationBell />
             <ThemeToggle />
             <DropdownMenu>
