@@ -53,12 +53,14 @@ export function SalesList() {
   const [selectedSaleDetails, setSelectedSaleDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
   useEffect(() => {
     const fetchSales = async () => {
       try {
         setLoading(true);
-        const res = await saleService.getAll();
+        const res = await saleService.getAll({ limit: 10000 });
         if (res.error) throw new Error(res.error);
         
         // Simular algunos datos históricos si la API devuelve poco, 
@@ -119,6 +121,12 @@ export function SalesList() {
     }
     return 0;
   });
+
+  const totalItems = filteredSales.length;
+  const totalPages = Math.ceil(totalItems / limit);
+  const paginatedSales = filteredSales.slice((page - 1) * limit, page * limit);
+
+  useEffect(() => { setPage(1); }, [searchTerm, dateRange, amountRange, sortBy]);
 
   // Procesar datos para el gráfico de los últimos 7 días
   const chartData = useMemo(() => {
@@ -441,7 +449,7 @@ export function SalesList() {
                 <p className="text-sm text-red-500/80">{error}</p>
               </div>
             </div>
-          ) : filteredSales.length === 0 ? (
+          ) : paginatedSales.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[300px] text-muted-foreground/50">
               <Receipt className="mx-auto mb-4 h-16 w-16 opacity-20" />
               <p className="text-lg font-medium">No hay ventas registradas</p>
@@ -460,7 +468,7 @@ export function SalesList() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {filteredSales.map((sale) => (
+                  {paginatedSales.map((sale) => (
                     <tr
                       key={sale.sale_id}
                       className="transition-all duration-200 hover:bg-muted/50 hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
@@ -509,6 +517,27 @@ export function SalesList() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-4 p-4 border-t border-border/50 bg-card/50">
+              <span className="text-sm text-muted-foreground font-medium">
+                Página <strong className="text-foreground">{page}</strong> de {totalPages} ({totalItems} total)
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm"
+                  onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                  disabled={page === 1}
+                >
+                  Anterior
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={page === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

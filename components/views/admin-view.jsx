@@ -60,6 +60,8 @@ export function AdminView() {
 
   // States for Users & Roles
   const [users, setUsers] = useState([])
+  const [usersPage, setUsersPage] = useState(1)
+  const usersLimit = 10
   const [rolesList, setRolesList] = useState([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [usersSearch, setUsersSearch] = useState("")
@@ -70,7 +72,7 @@ export function AdminView() {
   const loadUsers = async () => {
     try {
       setLoadingUsers(true)
-      const response = await apiClient.get('/users')
+      const response = await apiClient.get('/users?limit=10000')
       if (!response.error) {
         setUsers(extractList(response.data))
       }
@@ -109,6 +111,9 @@ export function AdminView() {
   }
 
   useEffect(() => {
+    setUsersPage(1)
+    setVenuesPage(1)
+    setServicesPage(1)
     if (activeTab === 'users') {
       loadUsers()
       loadRoles()
@@ -128,6 +133,8 @@ export function AdminView() {
   const [venuesSearch, setVenuesSearch] = useState("")
   const [venuesFilterStatus, setVenuesFilterStatus] = useState("All")
   const [showVenuesFilters, setShowVenuesFilters] = useState(false)
+  const [venuesPage, setVenuesPage] = useState(1)
+  const venuesLimit = 10
 
   // States for Services
   const [services, setServices] = useState([])
@@ -140,11 +147,17 @@ export function AdminView() {
   const [servicesSearch, setServicesSearch] = useState("")
   const [servicesFilterType, setServicesFilterType] = useState("All")
   const [showServicesFilters, setShowServicesFilters] = useState(false)
+  const [servicesPage, setServicesPage] = useState(1)
+  const servicesLimit = 10
+
+  useEffect(() => { setVenuesPage(1) }, [venuesSearch, venuesFilterStatus])
+  useEffect(() => { setServicesPage(1) }, [servicesSearch, servicesFilterType])
+  useEffect(() => { setUsersPage(1) }, [usersSearch, usersFilterRole, usersFilterStatus])
 
   const loadVenues = async () => {
     try {
       setLoadingVenues(true)
-      const response = await venueService.getAll()
+      const response = await venueService.getAll({ limit: 10000 })
       if (!response.error) setVenues(extractList(response.data))
     } catch (err) {
       console.error("Error al cargar salones:", err)
@@ -156,7 +169,7 @@ export function AdminView() {
   const loadServices = async () => {
     try {
       setLoadingServices(true)
-      const response = await serviceExternalService.getAll()
+      const response = await serviceExternalService.getAll({ limit: 10000 })
       if (!response.error) setServices(extractList(response.data))
     } catch (err) {
       console.error("Error al cargar servicios:", err)
@@ -448,128 +461,92 @@ export function AdminView() {
 
             <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b border-border bg-card/80">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Usuario
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Rol
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Último acceso
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Estado
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Acciones
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {loadingUsers ? (
-                        <tr>
-                          <td colSpan="5" className="px-6 py-4 text-center text-muted-foreground">
-                            Cargando usuarios...
-                          </td>
-                        </tr>
-                      ) : (() => {
-                        const filteredUsers = users.filter((u) => {
-                          const term = usersSearch.toLowerCase()
-                          const matchSearch = (u.name || "").toLowerCase().includes(term) || (u.email || "").toLowerCase().includes(term)
-                          const matchRole = usersFilterRole === "All" || String(u.role_id) === usersFilterRole
-                          const matchStatus = usersFilterStatus === "All" || u.status === usersFilterStatus
-                          return matchSearch && matchRole && matchStatus
-                        })
+                {(() => {
+                  const filteredUsers = users.filter((u) => {
+                    const term = usersSearch.toLowerCase()
+                    const matchSearch = (u.name || "").toLowerCase().includes(term) || (u.email || "").toLowerCase().includes(term)
+                    const matchRole = usersFilterRole === "All" || String(u.role_id) === usersFilterRole
+                    const matchStatus = usersFilterStatus === "All" || u.status === usersFilterStatus
+                    return matchSearch && matchRole && matchStatus
+                  })
+                  const totalUsersItems = filteredUsers.length
+                  const totalUsersPages = Math.ceil(totalUsersItems / usersLimit)
+                  const paginatedUsers = filteredUsers.slice((usersPage - 1) * usersLimit, usersPage * usersLimit)
 
-                        if (filteredUsers.length === 0) {
-                          return (
+                  return (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="border-b border-border bg-card/80">
                             <tr>
-                              <td colSpan="5" className="px-6 py-4 text-center text-muted-foreground">
-                                No se encontraron usuarios.
-                              </td>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Usuario</th>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Rol</th>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Último acceso</th>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Estado</th>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Acciones</th>
                             </tr>
-                          )
-                        }
-
-                        return filteredUsers.map((user) => (
-                          <tr
-                            key={user.user_id}
-                            className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm"
-                          >
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#1d3557]/20 to-[#1d3557]/5 border border-[#1d3557]/10">
-                                  <span className="text-sm font-semibold text-[#1d3557]">
-                                    {(user.name || "U")
-                                      .split(' ')
-                                      .map((n) => n[0])
-                                      .join('')}
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {loadingUsers ? (
+                              <tr><td colSpan="5" className="px-6 py-4 text-center text-muted-foreground">Cargando usuarios...</td></tr>
+                            ) : paginatedUsers.length === 0 ? (
+                              <tr><td colSpan="5" className="px-6 py-4 text-center text-muted-foreground">No se encontraron usuarios.</td></tr>
+                            ) : paginatedUsers.map((user) => (
+                              <tr key={user.user_id} className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm">
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#1d3557]/20 to-[#1d3557]/5 border border-[#1d3557]/10">
+                                      <span className="text-sm font-semibold text-[#1d3557]">
+                                        {(user.name || "U").split(' ').map((n) => n[0]).join('')}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-foreground">{user.name}</p>
+                                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <Shield className="h-4 w-4 text-[#6b705c]" />
+                                    <span className="text-sm text-foreground">{user.Role?.role_name || user.Role?.name || 'Administrador'}</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <p className="text-sm text-muted-foreground">
+                                    {user.create_at || user.createdAt ? new Date(user.create_at || user.createdAt).toLocaleDateString() : 'No registrado'}
+                                  </p>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[user.status] || 'bg-gray-200'}`}>
+                                    {user.status === 'active' ? 'Activo' : user.status === 'inactive' ? 'Inactivo' : user.status === 'suspended' ? 'Suspendido' : user.status}
                                   </span>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-foreground">{user.name}</p>
-                                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <Shield className="h-4 w-4 text-[#6b705c]" />
-                                <span className="text-sm text-foreground">
-                                  {user.Role?.role_name || user.Role?.name || 'Administrador'}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-sm text-muted-foreground">
-                                {user.create_at || user.createdAt
-                                  ? new Date(user.create_at || user.createdAt).toLocaleDateString()
-                                  : 'No registrado'}
-                              </p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span
-                                className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[user.status] || 'bg-gray-200'}`}
-                              >
-                                {user.status === 'active'
-                                  ? 'Activo'
-                                  : user.status === 'inactive'
-                                    ? 'Inactivo'
-                                    : user.status === 'suspended'
-                                      ? 'Suspendido'
-                                      : user.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEditUser(user)}
-                                  className="rounded-lg border-border hover:bg-muted/50"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeleteUser(user.user_id)}
-                                  className="rounded-lg border-[#c05c3c] text-[#c05c3c] hover:bg-[#c05c3c]/10"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => handleEditUser(user)} className="rounded-lg border-border hover:bg-muted/50"><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => handleDeleteUser(user.user_id)} className="rounded-lg border-[#c05c3c] text-[#c05c3c] hover:bg-[#c05c3c]/10"><Trash2 className="h-4 w-4" /></Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {totalUsersPages > 1 && (
+                        <div className="flex items-center justify-between gap-4 p-4 border-t border-border/50 bg-card/50">
+                          <span className="text-sm text-muted-foreground font-medium">
+                            Página <strong className="text-foreground">{usersPage}</strong> de {totalUsersPages} ({totalUsersItems} total)
+                          </span>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setUsersPage(prev => Math.max(1, prev - 1))} disabled={usersPage === 1}>Anterior</Button>
+                            <Button variant="outline" size="sm" onClick={() => setUsersPage(prev => Math.min(totalUsersPages, prev + 1))} disabled={usersPage === totalUsersPages}>Siguiente</Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
               </CardContent>
             </Card>
           </div>
@@ -627,89 +604,84 @@ export function AdminView() {
               </Card>
             )}
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {loadingVenues ? (
-                <p className="text-muted-foreground p-4">Cargando salones...</p>
-              ) : (() => {
+            {(() => {
                 const filteredVenues = venues.filter((v) => {
                   const term = venuesSearch.toLowerCase()
                   const matchSearch = (v.name || "").toLowerCase().includes(term)
                   const matchStatus = venuesFilterStatus === "All" || v.status === venuesFilterStatus
                   return matchSearch && matchStatus
                 })
+                const totalVenuesItems = filteredVenues.length
+                const totalVenuesPages = Math.ceil(totalVenuesItems / venuesLimit)
+                const paginatedVenues = filteredVenues.slice((venuesPage - 1) * venuesLimit, venuesPage * venuesLimit)
 
-                if (filteredVenues.length === 0) {
-                  return <p className="text-muted-foreground p-4">No se encontraron salones.</p>
-                }
-
-                return filteredVenues.map((venue) => (
-                  <Card
-                    key={venue.venue_id || Math.random()}
-                    className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40"
-                  >
-                    {venue.image_url ? (
-                      <div className="w-full h-40 overflow-hidden">
-                        <img
-                          src={venue.image_url}
-                          alt={venue.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-full h-40 flex items-center justify-center bg-gradient-to-br from-[#1d3557]/10 to-[#1d3557]/5">
-                        <Building className="h-12 w-12 text-[#1d3557]/30" />
+                return (
+                  <>
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {loadingVenues ? (
+                        <p className="text-muted-foreground p-4">Cargando salones...</p>
+                      ) : paginatedVenues.length === 0 ? (
+                        <p className="text-muted-foreground p-4">No se encontraron salones.</p>
+                      ) : paginatedVenues.map((venue) => (
+                        <Card
+                          key={venue.venue_id || Math.random()}
+                          className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-white/40"
+                        >
+                          {venue.image_url ? (
+                            <div className="w-full h-40 overflow-hidden">
+                              <img src={venue.image_url} alt={venue.name} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                            </div>
+                          ) : (
+                            <div className="w-full h-40 flex items-center justify-center bg-gradient-to-br from-[#1d3557]/10 to-[#1d3557]/5">
+                              <Building className="h-12 w-12 text-[#1d3557]/30" />
+                            </div>
+                          )}
+                          <CardHeader className="pb-2">
+                            <div className="flex items-start justify-between">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1d3557]/20 to-[#1d3557]/5 border border-[#1d3557]/10">
+                                <Building className="h-6 w-6 text-[#1d3557]" />
+                              </div>
+                              <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[venue.status]}`}>
+                                {statusLabels[venue.status] || venue.status}
+                              </span>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div>
+                              <CardTitle className="text-lg font-semibold text-foreground">{venue.name}</CardTitle>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-2xl font-bold text-[#6b705c]">{venue.capacity}</p>
+                                <p className="text-xs text-muted-foreground">Capacidad</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-[#c05c3c]">${venue.base_price || 0}</p>
+                                <p className="text-xs text-muted-foreground">Precio Base</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="outline" onClick={() => handleEditVenue(venue)} className="flex-1 rounded-xl border-border hover:bg-muted/50">Editar</Button>
+                              <Button variant="outline" onClick={() => handleDeleteVenue(venue.venue_id)} className="rounded-xl border-[#c05c3c] text-[#c05c3c] hover:bg-[#c05c3c]/10"><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    {totalVenuesPages > 1 && (
+                      <div className="flex items-center justify-between gap-4 p-4 bg-card/60 rounded-2xl border border-white/10 shadow-sm">
+                        <span className="text-sm text-muted-foreground font-medium">
+                          Página <strong className="text-foreground">{venuesPage}</strong> de {totalVenuesPages} ({totalVenuesItems} total)
+                        </span>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setVenuesPage(prev => Math.max(1, prev - 1))} disabled={venuesPage === 1}>Anterior</Button>
+                          <Button variant="outline" size="sm" onClick={() => setVenuesPage(prev => Math.min(totalVenuesPages, prev + 1))} disabled={venuesPage === totalVenuesPages}>Siguiente</Button>
+                        </div>
                       </div>
                     )}
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1d3557]/20 to-[#1d3557]/5 border border-[#1d3557]/10">
-                          <Building className="h-6 w-6 text-[#1d3557]" />
-                        </div>
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[venue.status]}`}
-                        >
-                          {statusLabels[venue.status] || venue.status}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <CardTitle className="text-lg font-semibold text-foreground">
-                          {venue.name}
-                        </CardTitle>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-2xl font-bold text-[#6b705c]">{venue.capacity}</p>
-                          <p className="text-xs text-muted-foreground">Capacidad</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-[#c05c3c]">${venue.base_price || 0}</p>
-                          <p className="text-xs text-muted-foreground">Precio Base</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => handleEditVenue(venue)}
-                          className="flex-1 rounded-xl border-border hover:bg-muted/50"
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleDeleteVenue(venue.venue_id)}
-                          className="rounded-xl border-[#c05c3c] text-[#c05c3c] hover:bg-[#c05c3c]/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                  </>
+                )
               })()}
-            </div>
           </div>
         )}
 
@@ -767,113 +739,83 @@ export function AdminView() {
 
             <Card className="overflow-hidden rounded-2xl border border-white/20 bg-card/80 backdrop-blur-md shadow-xl transition-all duration-300">
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b border-border bg-card/80">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Proveedor
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Tipo
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Contacto
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Precio base
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
-                          Acciones
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {loadingServices ? (
-                        <tr>
-                          <td colSpan="5" className="p-4 text-center">
-                            Cargando servicios...
-                          </td>
-                        </tr>
-                      ) : (() => {
-                        const filteredServices = services.filter((s) => {
-                          const term = servicesSearch.toLowerCase()
-                          const matchSearch = (s.name || "").toLowerCase().includes(term) || (s.provider_info || "").toLowerCase().includes(term)
-                          const matchType = servicesFilterType === "All" || s.service_type === servicesFilterType
-                          return matchSearch && matchType
-                        })
+                {(() => {
+                  const filteredServices = services.filter((s) => {
+                    const term = servicesSearch.toLowerCase()
+                    const matchSearch = (s.name || "").toLowerCase().includes(term) || (s.provider_info || "").toLowerCase().includes(term)
+                    const matchType = servicesFilterType === "All" || s.service_type === servicesFilterType
+                    return matchSearch && matchType
+                  })
+                  const totalServicesItems = filteredServices.length
+                  const totalServicesPages = Math.ceil(totalServicesItems / servicesLimit)
+                  const paginatedServices = filteredServices.slice((servicesPage - 1) * servicesLimit, servicesPage * servicesLimit)
 
-                        if (filteredServices.length === 0) {
-                          return (
+                  return (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="border-b border-border bg-card/80">
                             <tr>
-                              <td colSpan="5" className="p-4 text-center">
-                                No se encontraron servicios externos.
-                              </td>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Proveedor</th>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Tipo</th>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Contacto</th>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Precio base</th>
+                              <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Acciones</th>
                             </tr>
-                          )
-                        }
-
-                        return filteredServices.map((service) => (
-                          <tr
-                            key={service.service_id || Math.random()}
-                            className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm"
-                          >
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                {service.image_url ? (
-                                  <img
-                                    src={service.image_url}
-                                    alt={service.name}
-                                    className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                  />
-                                ) : (
-                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#6b705c]/20 to-[#6b705c]/5 border border-[#6b705c]/10">
-                                    <Briefcase className="h-5 w-5 text-[#6b705c]" />
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {loadingServices ? (
+                              <tr><td colSpan="5" className="p-4 text-center">Cargando servicios...</td></tr>
+                            ) : paginatedServices.length === 0 ? (
+                              <tr><td colSpan="5" className="p-4 text-center">No se encontraron servicios externos.</td></tr>
+                            ) : paginatedServices.map((service) => (
+                              <tr key={service.service_id || Math.random()} className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm">
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    {service.image_url ? (
+                                      <img src={service.image_url} alt={service.name} className="h-10 w-10 shrink-0 rounded-lg object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                                    ) : (
+                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#6b705c]/20 to-[#6b705c]/5 border border-[#6b705c]/10">
+                                        <Briefcase className="h-5 w-5 text-[#6b705c]" />
+                                      </div>
+                                    )}
+                                    <p className="font-medium text-foreground">{service.name}</p>
                                   </div>
-                                )}
-                                <p className="font-medium text-foreground">{service.name}</p>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="rounded-full bg-card/70 px-3 py-1 text-xs font-medium text-foreground">
-                                {service.service_type}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-sm text-muted-foreground">
-                                {service.provider_info}
-                              </p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="font-semibold text-[#6b705c]">${service.base_price}</p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEditService(service)}
-                                  className="rounded-lg border-border hover:bg-muted/50"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeleteService(service.service_id || service.id)}
-                                  className="rounded-lg border-[#c05c3c] text-[#c05c3c] hover:bg-[#c05c3c]/10"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="rounded-full bg-card/70 px-3 py-1 text-xs font-medium text-foreground">{service.service_type}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <p className="text-sm text-muted-foreground">{service.provider_info}</p>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <p className="font-semibold text-[#6b705c]">${service.base_price}</p>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => handleEditService(service)} className="rounded-lg border-border hover:bg-muted/50"><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => handleDeleteService(service.service_id || service.id)} className="rounded-lg border-[#c05c3c] text-[#c05c3c] hover:bg-[#c05c3c]/10"><Trash2 className="h-4 w-4" /></Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {totalServicesPages > 1 && (
+                        <div className="flex items-center justify-between gap-4 p-4 border-t border-border/50 bg-card/50">
+                          <span className="text-sm text-muted-foreground font-medium">
+                            Página <strong className="text-foreground">{servicesPage}</strong> de {totalServicesPages} ({totalServicesItems} total)
+                          </span>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setServicesPage(prev => Math.max(1, prev - 1))} disabled={servicesPage === 1}>Anterior</Button>
+                            <Button variant="outline" size="sm" onClick={() => setServicesPage(prev => Math.min(totalServicesPages, prev + 1))} disabled={servicesPage === totalServicesPages}>Siguiente</Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
               </CardContent>
             </Card>
           </div>
