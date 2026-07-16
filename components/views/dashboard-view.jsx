@@ -13,11 +13,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { eventService } from "@/lib/services/event.service";
-import { clientService } from "@/lib/services/client.service";
-import { inventoryService } from "@/lib/services/inventory.service";
-import { saleService } from "@/lib/services/sale.service";
-import { authService } from "@/lib/services/auth.service";
+import { dashboardService } from "@/lib/services/dashboard.service";
 import { 
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
@@ -86,171 +82,23 @@ export function DashboardView() {
         setLoading(true);
         setError(null);
 
-        const userRole = user?.Role?.role_name;
-        const accessLevel = user?.Role?.access || 0;
-        const isAdmin = accessLevel >= 3;
-        
-        const canViewEvents = isAdmin || ["Gerente", "Ventas", "Staff"].includes(userRole);
-        const canViewClients = isAdmin || ["Gerente", "Ventas"].includes(userRole);
-        const canViewInventory = isAdmin || ["Gerente"].includes(userRole);
-        const canViewSales = isAdmin || ["Gerente", "Ventas"].includes(userRole);
+        const response = await dashboardService.getDashboardData();
 
-        // Fetch user profile to get Employee details (like salary) if they are Staff
-        let userProfile = null;
-        try {
-          const profileRes = await authService.getProfile();
-          if (profileRes && !profileRes.error) {
-            userProfile = profileRes.data;
-            setProfile(userProfile);
-          }
-        } catch (e) {
-          console.error("Error loading profile:", e);
+        if (response.error) {
+          throw new Error(response.error);
         }
 
-        const results = await Promise.allSettled([
-          canViewEvents ? eventService.getAll({ limit: 10000 }) : Promise.resolve({ data: [] }),
-          canViewClients ? clientService.getAll({ limit: 10000 }) : Promise.resolve({ data: [] }),
-          (canViewInventory && inventoryService.getLowStockItems) ? inventoryService.getLowStockItems() : Promise.resolve({ data: [] }),
-          canViewSales ? saleService.getAll({ limit: 10000 }) : Promise.resolve({ data: [] })
-        ]);
+        const result = response.data;
 
-        const eventsRes = results[0].status === 'fulfilled' ? results[0].value : { data: [] };
-        const clientsRes = results[1].status === 'fulfilled' ? results[1].value : { data: [] };
-        const inventoryRes = results[2].status === 'fulfilled' ? results[2].value : { data: [] };
-        const salesRes = results[3].status === 'fulfilled' ? results[3].value : { data: [] };
-
-        const getArray = (resPayload) => {
-          if (!resPayload) return [];
-          if (Array.isArray(resPayload)) return resPayload;
-          if (Array.isArray(resPayload.data)) return resPayload.data;
-          return [];
-        };
-
-        const eventsList = getArray(eventsRes.data);
-        const clientsList = getArray(clientsRes.data);
-        const inventoryList = getArray(inventoryRes.data);
-        const salesList = getArray(salesRes.data);
-
-        const totalEvents = eventsList.length;
-        const activeClients = clientsList.filter((c) => c.status === "Active" || !c.status).length;
-        const lowStockAlerts = inventoryList.length;
-        const totalRevenue = salesList.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
-
-        setStats({
-          totalEvents,
-          totalRevenue,
-          activeClients,
-          lowStockAlerts
-        });
-
-        // 1. Group Monthly Revenue (for AreaChart)
-        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-        const today = new Date();
-        const revMap = [];
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-          revMap.push({
-            name: months[d.getMonth()],
-            Ingresos: 0,
-            year: d.getFullYear(),
-            monthIndex: d.getMonth()
-          });
-        }
-        salesList.forEach(sale => {
-          const sDate = getSafeDate(sale.create_at || sale.createdAt);
-          const saleMonth = sDate.getMonth();
-          const saleYear = sDate.getFullYear();
-          const bucket = revMap.find(b => b.monthIndex === saleMonth && b.year === saleYear);
-          if (bucket) {
-            bucket.Ingresos += Number(sale.total || sale.total_amount || 0);
-          }
-        });
-        setRevenueData(revMap);
-
-        // 2. Event Types Popularity (for PieChart / BarChart)
-        const typeCounts = {};
-        eventsList.forEach(e => {
-          const type = e.type_event || "Otro";
-          typeCounts[type] = (typeCounts[type] || 0) + 1;
-        });
-        setEventTypesData(Object.entries(typeCounts).map(([name, value]) => ({ name, value })));
-
-        // 3. Venues Popularity (for BarChart)
-        const venueCounts = {};
-        eventsList.forEach(e => {
-          let names = [];
-          if (e.Venues && e.Venues.length > 0) {
-            names = e.Venues.map(v => v.name);
-          } else if (e.Venue?.name) {
-            names = [e.Venue.name];
-          } else if (e.venue_name) {
-            names = [e.venue_name];
-          } else {
-            names = ["Sin Salón"];
-          }
-          names.forEach(name => {
-            venueCounts[name] = (venueCounts[name] || 0) + 1;
-          });
-        });
-        setVenuesData(Object.entries(venueCounts).map(([name, value]) => ({ name, value })));
-
-        // 4. Staff-specific Workload and Roles Distribution
-        if (userRole === 'Staff') {
-          const workloadMap = [];
-          for (let i = 5; i >= 0; i--) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            workloadMap.push({
-              name: months[d.getMonth()],
-              Jornadas: 0,
-              year: d.getFullYear(),
-              monthIndex: d.getMonth()
-            });
-          }
-          eventsList.forEach(event => {
-            const eDate = getSafeDate(event.start_date || event.date);
-            const eMonth = eDate.getMonth();
-            const eYear = eDate.getFullYear();
-            const bucket = workloadMap.find(b => b.monthIndex === eMonth && b.year === eYear);
-            if (bucket) {
-              bucket.Jornadas += 1;
-            }
-          });
-          setStaffWorkloadData(workloadMap);
-
-          const staffEmpId = userProfile?.Employee?.employee_id;
-          const roleDistribution = {};
-          eventsList.forEach(event => {
-            if (event.EventStaffs && staffEmpId) {
-              const assignment = event.EventStaffs.find(es => es.employee_id === staffEmpId);
-              if (assignment) {
-                const empRol = assignment.Employee?.rol || userProfile?.Employee?.rol || "Staff";
-                roleDistribution[empRol] = (roleDistribution[empRol] || 0) + 1;
-              }
-            } else {
-              const empRol = userProfile?.Employee?.rol || "Staff";
-              roleDistribution[empRol] = (roleDistribution[empRol] || 0) + 1;
-            }
-          });
-          setStaffRolesData(Object.entries(roleDistribution).map(([name, value]) => ({ name, value })));
-        }
-
-        // Map upcoming events - only future events
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const upcoming = eventsList
-          .filter((e) => {
-            const eventDate = getSafeDate(e.start_date || e.date);
-            return e.status !== "Finished" && e.status !== "Cancelled" && eventDate >= now;
-          })
-          .sort((a, b) => getSafeDate(a.start_date || a.date).getTime() - getSafeDate(b.start_date || b.date).getTime())
-          .slice(0, 5);
-        setUpcomingEvents(upcoming);
-
-        // Map recent sales
-        const recent = salesList
-          .sort((a, b) => getSafeDate(b.create_at || b.createdAt).getTime() - getSafeDate(a.create_at || a.createdAt).getTime())
-          .slice(0, 5);
-        setRecentSales(recent);
+        setProfile(result.profile);
+        setStats(result.stats);
+        setRevenueData(result.revenueData);
+        setEventTypesData(result.eventTypesData);
+        setVenuesData(result.venuesData);
+        setStaffWorkloadData(result.staffWorkloadData);
+        setStaffRolesData(result.staffRolesData);
+        setUpcomingEvents(result.upcomingEvents);
+        setRecentSales(result.recentSales);
 
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Failed to load dashboard data";
