@@ -69,10 +69,10 @@ export function AdminView() {
   const [usersFilterStatus, setUsersFilterStatus] = useState("All")
   const [showUsersFilters, setShowUsersFilters] = useState(false)
 
-  const loadUsers = async () => {
+  const loadUsers = async (bustCache) => {
     try {
       setLoadingUsers(true)
-      const response = await apiClient.get('/users?limit=10000')
+      const response = await apiClient.get('/users?limit=10000' + (bustCache ? '&_t=' + Date.now() : ''))
       if (!response.error) {
         setUsers(extractList(response.data))
       }
@@ -110,18 +110,6 @@ export function AdminView() {
     }
   }
 
-  useEffect(() => {
-    setUsersPage(1)
-    setVenuesPage(1)
-    setServicesPage(1)
-    if (activeTab === 'users') {
-      loadUsers()
-      loadRoles()
-    }
-    else if (activeTab === 'venues') loadVenues()
-    else if (activeTab === 'services') loadServices()
-  }, [activeTab])
-
   // States for Venues
   const [venues, setVenues] = useState([])
   const [loadingVenues, setLoadingVenues] = useState(false)
@@ -150,14 +138,10 @@ export function AdminView() {
   const [servicesPage, setServicesPage] = useState(1)
   const servicesLimit = 10
 
-  useEffect(() => { setVenuesPage(1) }, [venuesSearch, venuesFilterStatus])
-  useEffect(() => { setServicesPage(1) }, [servicesSearch, servicesFilterType])
-  useEffect(() => { setUsersPage(1) }, [usersSearch, usersFilterRole, usersFilterStatus])
-
-  const loadVenues = async () => {
+  const loadVenues = async (bustCache) => {
     try {
       setLoadingVenues(true)
-      const response = await venueService.getAll({ limit: 10000 })
+      const response = await venueService.getAll({ limit: 10000, ...(bustCache ? { _t: Date.now() } : {}) })
       if (!response.error) setVenues(extractList(response.data))
     } catch (err) {
       console.error("Error al cargar salones:", err)
@@ -166,10 +150,10 @@ export function AdminView() {
     }
   }
 
-  const loadServices = async () => {
+  const loadServices = async (bustCache) => {
     try {
       setLoadingServices(true)
-      const response = await serviceExternalService.getAll({ limit: 10000 })
+      const response = await serviceExternalService.getAll({ limit: 10000, ...(bustCache ? { _t: Date.now() } : {}) })
       if (!response.error) setServices(extractList(response.data))
     } catch (err) {
       console.error("Error al cargar servicios:", err)
@@ -213,7 +197,7 @@ export function AdminView() {
       }
 
       setUserModalOpen(false)
-      loadUsers()
+      loadUsers(true)
     } catch (err) {
       alert('Error al guardar el usuario')
       console.error(err)
@@ -226,7 +210,7 @@ export function AdminView() {
     if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
       try {
         await apiClient.delete(`/users/${id}`)
-        loadUsers()
+        loadUsers(true)
       } catch (err) {
         alert('Error al eliminar el usuario')
       }
@@ -276,7 +260,7 @@ export function AdminView() {
         return
       }
       setVenueModalOpen(false)
-      loadVenues()
+      loadVenues(true)
     } catch (err) {
       alert('Error al guardar el salón')
     } finally {
@@ -288,7 +272,7 @@ export function AdminView() {
     if (window.confirm('¿Estás seguro de eliminar este salón?')) {
       try {
         await venueService.delete(id)
-        loadVenues()
+        loadVenues(true)
       } catch (err) {
         alert('Error al eliminar el salón')
       }
@@ -338,7 +322,7 @@ export function AdminView() {
         return
       }
       setServiceModalOpen(false)
-      loadServices()
+      loadServices(true)
     } catch (err) {
       alert('Error al guardar el servicio')
     } finally {
@@ -351,12 +335,27 @@ export function AdminView() {
       try {
         const res = await serviceExternalService.delete(id)
         if (res && res.error) throw new Error(res.error)
-        loadServices()
+        loadServices(true)
       } catch (err) {
         alert('Error al eliminar: ' + err.message)
       }
     }
   }
+
+  useEffect(() => {
+    setUsersPage(1)
+    setVenuesPage(1)
+    setServicesPage(1)
+    if (activeTab === 'users') {
+      loadUsers()
+      loadRoles()
+    }
+    else if (activeTab === 'venues') loadVenues()
+    else if (activeTab === 'services') loadServices()
+  }, [activeTab])
+  useEffect(() => { setVenuesPage(1) }, [venuesSearch, venuesFilterStatus])
+  useEffect(() => { setServicesPage(1) }, [servicesSearch, servicesFilterType])
+  useEffect(() => { setUsersPage(1) }, [usersSearch, usersFilterRole, usersFilterStatus])
 
   return (
     <>

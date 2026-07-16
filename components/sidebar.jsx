@@ -42,7 +42,7 @@ export function Sidebar() {
   }
       <button
     onClick={() => setMobileOpen(true)}
-    className="fixed left-4 top-4 z-50 rounded-2xl bg-gradient-to-b from-sidebar to-sidebar/70 p-3 text-sidebar-foreground shadow-lg lg:hidden"
+    className="fixed left-4 top-4 z-50 rounded-2xl bg-gradient-to-b from-primary/10 to-sidebar/80 p-3 text-sidebar-foreground shadow-lg lg:hidden border border-primary/10 backdrop-blur-xl"
     aria-label="Open menu"
   >
         <Menu className="h-5 w-5" />
@@ -80,7 +80,7 @@ export function Sidebar() {
   }
       <aside
     className={cn(
-      "fixed left-0 top-0 z-50 flex h-full w-72 flex-col bg-gradient-to-b from-sidebar to-sidebar/70 text-sidebar-foreground transition-transform duration-300 lg:translate-x-0",
+      "fixed left-0 top-0 z-50 flex h-full w-72 flex-col bg-gradient-to-b from-primary/10 via-sidebar/80 to-sidebar/50 text-sidebar-foreground transition-transform duration-300 lg:translate-x-0 border-r border-primary/10 shadow-lg backdrop-blur-xl",
       mobileOpen ? "translate-x-0" : "-translate-x-full"
     )}
   >
@@ -144,7 +144,7 @@ export function Sidebar() {
                 className={cn(
                   "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-all duration-200",
                   // Estilos condicionales
-                  isActive ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  isActive ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   // Inactivo: efecto hover
                 )}
               >

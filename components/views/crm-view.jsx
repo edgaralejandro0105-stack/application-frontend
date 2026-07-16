@@ -86,7 +86,7 @@ export function CRMView() {
       toast.success("Cliente creado exitosamente");
       setModalOpen(false);
       setNewClientData({ name: "", last_name: "", doc_id: "", email: "", phone: "", direction: "" });
-      loadData();
+      loadData(true);
     } catch (err) {
       toast.error(err.message || "Error al crear cliente");
     } finally {
@@ -94,14 +94,15 @@ export function CRMView() {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (bustCache) => {
     try {
       setLoading(true);
       const response = await clientService.getAll({
         page: currentPage,
         limit: itemsPerPage,
         search: searchTerm,
-        status: filterStatus
+        status: filterStatus,
+        ...(bustCache ? { _t: Date.now() } : {})
       });
       if (response.error) {
         throw new Error(response.error);
@@ -183,7 +184,7 @@ export function CRMView() {
       toast.success("Cliente eliminado exitosamente");
       setDeleteModalOpen(false);
       setSelectedClient(null);
-      loadData(); // Recargar lista
+      loadData(true); // Recargar lista
     } catch (err) {
       toast.error("Error al eliminar el cliente");
       console.error(err);
