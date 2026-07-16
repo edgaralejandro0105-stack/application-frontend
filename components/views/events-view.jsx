@@ -23,7 +23,8 @@ import {
   Trash2,
   SlidersHorizontal,
   Search,
-  Filter
+  Filter,
+  FileText
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import { employeeService } from "@/lib/services/employee.service";
 import { serviceExternalService } from "@/lib/services/serviceExternal.service";
 import { extractList } from "@/lib/api-client";
 import { toast } from "sonner";
+import { reportService } from "@/lib/services/report.service";
 
 const statusColors = {
   Lead: "bg-[#d4a574] text-white",
@@ -109,6 +111,10 @@ export function EventsView() {
   const [filterListVenue, setFilterListVenue] = useState("All");
   const [sortBy, setSortBy] = useState("dateDesc");
   const [showListFilters, setShowListFilters] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const listLimit = 10;
+
+  useEffect(() => { setListPage(1); }, [listSearchTerm, filterListStatus, filterListType, filterListVenue]);
 
   const {
     register,
@@ -731,7 +737,11 @@ export function EventsView() {
               return 0;
             });
 
-            if (filteredEvents.length === 0) {
+            const totalFilteredItems = filteredEvents.length;
+            const totalFilteredPages = Math.ceil(totalFilteredItems / listLimit);
+            const paginatedEvents = filteredEvents.slice((listPage - 1) * listLimit, listPage * listLimit);
+
+            if (paginatedEvents.length === 0) {
               return (
                 <Card className="flex flex-col items-center justify-center p-12 bg-card/40 backdrop-blur-sm border-white/10">
                   <CalendarIcon className="h-16 w-16 text-muted-foreground/30 mb-4" />
@@ -741,7 +751,9 @@ export function EventsView() {
               );
             }
 
-            return filteredEvents.map((event) => {
+            return (
+              <>
+                {paginatedEvents.map((event) => {
               const eName = getEventName(event);
               const startDate = new Date(event.start_date || event.date);
               const timeDisplay = event.time || (startDate.getTime() ? startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : "00:00");
@@ -806,6 +818,16 @@ export function EventsView() {
                           <Pencil className="mr-2 h-4 w-4" />
                           Editar
                         </Button>
+                        {event.status === 'Confirmed' && (
+                          <Button
+                            variant="outline"
+                            onClick={() => reportService.downloadEventContract(event.event_id || event.id)}
+                            className="rounded-xl border-[#8b5cf6]/50 text-[#8b5cf6] hover:bg-[#8b5cf6]/10 transition-all"
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Contrato
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           onClick={() => handleDeleteEvent(event)}
@@ -819,7 +841,30 @@ export function EventsView() {
                   </CardContent>
                 </Card>
               );
-            });
+            })}
+                {totalFilteredPages > 1 && (
+                  <div className="flex items-center justify-between gap-4 p-4 bg-card/60 rounded-2xl border border-white/10 shadow-sm">
+                    <span className="text-sm text-muted-foreground font-medium">
+                      Página <strong className="text-foreground">{listPage}</strong> de {totalFilteredPages} ({totalFilteredItems} total)
+                    </span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm"
+                        onClick={() => setListPage(prev => Math.max(1, prev - 1))}
+                        disabled={listPage === 1}
+                      >
+                        Anterior
+                      </Button>
+                      <Button variant="outline" size="sm"
+                        onClick={() => setListPage(prev => Math.min(totalFilteredPages, prev + 1))}
+                        disabled={listPage === totalFilteredPages}
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
           })()}
         </div>
       )}
