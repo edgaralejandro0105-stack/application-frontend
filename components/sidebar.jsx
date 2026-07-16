@@ -11,13 +11,15 @@ import {
   Menu,
   X,
   Receipt,
-  Truck
+  Truck,
+  Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 const navItems = [
   { path: "/", label: "Panel", icon: <LayoutDashboard className="h-5 w-5" /> },
   { path: "/sales", label: "Ventas", icon: <Receipt className="h-5 w-5" /> },
+  { path: "/payments", label: "Pagos", icon: <Wallet className="h-5 w-5" /> },
   { path: "/events", label: "Eventos", icon: <Calendar className="h-5 w-5" /> },
   { path: "/crm", label: "Clientes (CRM)", icon: <Users className="h-5 w-5" /> },
   { path: "/inventory", label: "Inventario", icon: <Package className="h-5 w-5" /> },

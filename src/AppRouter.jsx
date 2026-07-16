@@ -14,6 +14,7 @@ import { HRView } from "@/components/views/hr-view"
 import { AdminView } from "@/components/views/admin-view"
 import { SalesList } from "@/components/views/sales-list"
 import { CreateSale } from "@/components/views/create-sale"
+import { PaymentsView } from "@/components/views/payments-view"
 import { ProvidersView } from "@/components/views/providers-view"
 import { Profile } from "@/components/auth/Profile"
 
@@ -36,6 +37,7 @@ export default function AppRouter() {
           <Route path="hr" element={<HRView />} />
           <Route path="sales" element={<SalesList />} />
           <Route path="sales/create" element={<CreateSale />} />
+          <Route path="payments" element={<PaymentsView />} />
           <Route path="providers" element={<ProvidersView />} />
           <Route path="admin" element={<AdminView />} />
           <Route path="my-profile" element={<Profile />} />
