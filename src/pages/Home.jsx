@@ -17,10 +17,9 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { NotificationBell } from "@/components/NotificationBell"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { User, LogOut } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { Outlet, useNavigate } from "react-router-dom"
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState("dashboard")
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -33,43 +32,18 @@ export default function Home() {
     }
   }
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case "dashboard":
-        return <DashboardView />
-      case "events":
-        return <EventsView />
-      case "crm":
-        return <CRMView />
-      case "inventory":
-        return <InventoryView />
-      case "hr":
-        return <HRView />
-      case "sales":
-        return <SalesList onNavigate={setActiveSection} />
-      case "create-sale":
-        return <CreateSale onNavigate={setActiveSection} />
-      case "providers":
-        return <ProvidersView />
-      case "admin":
-        return <AdminView />
-      case "profile":
-        return <Profile />
-      default:
-        return <DashboardView />
-    }
-  }
+
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background print:bg-white">
         <div className="print:hidden">
-          <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+          <Sidebar />
         </div>
         <main className="flex min-h-screen flex-col lg:pl-72 print:pl-0">
           {/* HEADER / TOPBAR */}
           <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-end gap-2 border-b border-border/40 bg-background/40 px-4 backdrop-blur-md sm:px-6 lg:px-8 print:hidden">
-            <NotificationBell onNavigate={setActiveSection} />
+            <NotificationBell />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -89,7 +63,7 @@ export default function Home() {
                 <DropdownMenuSeparator className="bg-border/50" />
                 <DropdownMenuItem 
                   className="cursor-pointer rounded-lg focus:bg-primary/20 focus:text-primary"
-                  onClick={() => setActiveSection("profile")}
+                  onClick={() => navigate("/my-profile")}
                 >
                   <User className="mr-2 h-4 w-4" />
                   <span>Mi Perfil</span>
@@ -107,7 +81,9 @@ export default function Home() {
           </header>
 
           {/* MAIN CONTENT AREA */}
-          <div className="flex-1 px-4 py-8 lg:px-8 print:p-0 print:m-0">{renderContent()}</div>
+          <div className="flex-1 px-4 py-8 lg:px-8 print:p-0 print:m-0">
+            <Outlet />
+          </div>
         </main>
       </div>
     </ProtectedRoute>

@@ -5,8 +5,10 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { apiClient, extractList } from '@/lib/api-client';
+import { useNavigate } from 'react-router-dom';
 
-export function NotificationBell({ onNavigate }) {
+export function NotificationBell() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [socketStatus, setSocketStatus] = useState('disconnected');
@@ -147,9 +149,7 @@ export function NotificationBell({ onNavigate }) {
 
   const handleNotificationClick = (notif) => {
     setIsOpen(false);
-    if (onNavigate) {
-      onNavigate("events");
-    }
+    navigate("/events");
   };
 
   return (

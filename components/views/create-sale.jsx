@@ -24,6 +24,7 @@ import { saleService } from "@/lib/services/sale.service";
 import { extractList } from "@/lib/api-client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner"; 
+import { useNavigate } from "react-router-dom";
 
 const saleSchema = z.object({
   event_id: z.string().min(1, "Debe seleccionar un evento asociado"),
@@ -32,7 +33,8 @@ const saleSchema = z.object({
   discount: z.number().min(0).optional()
 });
 
-export function CreateSale({ onNavigate }) {
+export function CreateSale() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [events, setEvents] = useState([]);
@@ -205,7 +207,7 @@ export function CreateSale({ onNavigate }) {
         <div className="flex items-center gap-4">
           <Button 
             variant="outline" 
-            onClick={() => onNavigate("sales")}
+            onClick={() => navigate("/sales")}
             className="rounded-xl border-border hover:bg-muted/50 transition-all"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

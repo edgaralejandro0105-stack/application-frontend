@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Calendar,
@@ -16,19 +16,20 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 const navItems = [
-  { id: "dashboard", label: "Panel", icon: <LayoutDashboard className="h-5 w-5" /> },
-  { id: "sales", label: "Ventas", icon: <Receipt className="h-5 w-5" /> },
-  { id: "events", label: "Eventos", icon: <Calendar className="h-5 w-5" /> },
-  { id: "crm", label: "Clientes (CRM)", icon: <Users className="h-5 w-5" /> },
-  { id: "inventory", label: "Inventario", icon: <Package className="h-5 w-5" /> },
-  { id: "providers", label: "Proveedores", icon: <Truck className="h-5 w-5" /> },
-  { id: "hr", label: "Recursos Humanos", icon: <UserCog className="h-5 w-5" /> },
-  { id: "admin", label: "Administraci\xF3n", icon: <Settings className="h-5 w-5" /> }
+  { path: "/", label: "Panel", icon: <LayoutDashboard className="h-5 w-5" /> },
+  { path: "/sales", label: "Ventas", icon: <Receipt className="h-5 w-5" /> },
+  { path: "/events", label: "Eventos", icon: <Calendar className="h-5 w-5" /> },
+  { path: "/crm", label: "Clientes (CRM)", icon: <Users className="h-5 w-5" /> },
+  { path: "/inventory", label: "Inventario", icon: <Package className="h-5 w-5" /> },
+  { path: "/providers", label: "Proveedores", icon: <Truck className="h-5 w-5" /> },
+  { path: "/hr", label: "Recursos Humanos", icon: <UserCog className="h-5 w-5" /> },
+  { path: "/admin", label: "Administraci\xF3n", icon: <Settings className="h-5 w-5" /> }
 ];
-export function Sidebar({ activeSection, onSectionChange }) {
+export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   return <>
       {
     /* 
@@ -129,22 +130,27 @@ export function Sidebar({ activeSection, onSectionChange }) {
     */
   }
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {navItems.map((item) => <button
-    key={item.id}
-    onClick={() => {
-      onSectionChange(item.id);
-      setMobileOpen(false);
-    }}
-    className={cn(
-      "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-all duration-200",
-      // Estilos condicionales
-      activeSection === item.id ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-      // Inactivo: efecto hover
-    )}
-  >
-              {item.icon}
-              {item.label}
-            </button>)}
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
+            return (
+              <button
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-all duration-200",
+                  // Estilos condicionales
+                  isActive ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  // Inactivo: efecto hover
+                )}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            );
+          })}
         </nav>
 
         {
