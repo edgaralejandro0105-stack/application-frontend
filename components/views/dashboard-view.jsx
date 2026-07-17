@@ -177,12 +177,12 @@ export function DashboardView() {
       visible: showClients
     },
     {
-      title: "Alertas de Inventario",
+      title: "Productos de bajo stock",
       value: stats.lowStockAlerts,
       change: "-3",
       icon: AlertTriangle,
       color: "bg-[#facc15]",
-      visible: showInventory
+      visible: showClients
     }
   ].filter(kpi => kpi.visible !== false);
 
