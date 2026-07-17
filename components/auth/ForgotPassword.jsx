@@ -7,6 +7,7 @@ import * as z from "zod";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 import { authService } from "@/lib/services/auth.service";
+import { emailService } from "@/lib/services/email.service";
 
 const forgotSchema = z.object({
   email: z
@@ -31,11 +32,21 @@ export function ForgotPassword() {
   const onSubmit = async (data) => {
     setApiError(null);
     try {
-      const response = await authService.forgotPassword(data.email);
+      const response = await authService.generateResetToken(data.email);
       if (response.error) {
         setApiError(response.error ?? "No se pudo procesar la solicitud. Intenta nuevamente.");
         return;
       }
+
+      const { token, nombre_usuario } = response.data.data;
+      const enlace_recuperacion = `${window.location.origin}/reset-password?token=${token}`;
+
+      await emailService.sendPasswordResetEmail({
+        user_email: data.email,
+        nombre_usuario,
+        enlace_recuperacion,
+      });
+
       setSuccess(true);
     } catch (error) {
       setApiError("Error de conexión con el servidor.");
