@@ -12,7 +12,6 @@ import {
   ChevronDown,
   MapPin,
   Clock,
-  ArrowLeft,
   Edit,
   Trash2,
   Download,
@@ -27,9 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { employeeService } from "@/lib/services/employee.service";
 import { reportService } from "@/lib/services/report.service";
-import { extractList } from "@/lib/api-client";
-
-const departments = ["Todos", "Administrador", "Bartender", "Mesero", "Gerente", "Seguridad", "Cajero"];
+import { apiClient, extractList } from "@/lib/api-client";
 
 const statusColors = {
   active: "bg-[#6b705c] text-white",
@@ -56,6 +53,8 @@ export function HRView() {
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,10 +65,10 @@ export function HRView() {
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
   const [allEmployeesForAssignments, setAllEmployeesForAssignments] = useState([]);
+  const [rolesList, setRolesList] = useState([]);
 
-  // Perfil seleccionado
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  // Edición / Eliminación directa
+  const [editingEmployee, setEditingEmployee] = useState(null);
   const [editFormData, setEditFormData] = useState({});
 
   // Nuevo Empleado Data
@@ -82,6 +81,18 @@ export function HRView() {
     salary_per_event: "",
     status: "active"
   });
+
+  const loadRoles = async () => {
+    try {
+      const response = await apiClient.get('/roles');
+      if (!response.error) {
+        const roles = extractList(response.data);
+        setRolesList(roles.map((r) => r.role_name).filter(Boolean));
+      }
+    } catch (err) {
+      console.error('Error al cargar roles:', err);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -115,6 +126,7 @@ export function HRView() {
   };
 
   useEffect(() => {
+    loadRoles();
     const timer = setTimeout(() => {
       loadData();
     }, 400);
@@ -137,40 +149,8 @@ export function HRView() {
     }
   };
 
-  const handleUpdateEmployee = async () => {
-    try {
-      const payload = {
-        ...editFormData,
-        salary_per_event: editFormData.salary_per_event === "" ? 0 : Number(editFormData.salary_per_event)
-      };
-      const response = await employeeService.update(selectedEmployee.employee_id, payload);
-      if (response.error) throw new Error(response.error);
-      setIsEditing(false);
-      setSelectedEmployee({ ...selectedEmployee, ...payload });
-      loadData();
-    } catch (err) {
-      alert("Error al actualizar empleado: " + err.message);
-    }
-  };
-
-  const handleDeleteEmployee = async () => {
-    setConfirmDeleteOpen(true);
-  };
-
-  const executeDeleteEmployee = async () => {
-    try {
-      const response = await employeeService.delete(selectedEmployee.employee_id);
-      if (response.error) throw new Error(response.error);
-      setConfirmDeleteOpen(false);
-      setSelectedEmployee(null);
-      loadData();
-    } catch (err) {
-      alert("Error al eliminar empleado: " + err.message);
-    }
-  };
-
-  const openProfile = (employee) => {
-    setSelectedEmployee(employee);
+  const handleEditClick = (employee) => {
+    setEditingEmployee(employee);
     setEditFormData({
       first_name: employee.first_name || "",
       last_name: employee.last_name || "",
@@ -180,7 +160,40 @@ export function HRView() {
       salary_per_event: employee.salary_per_event || "",
       status: employee.status || "active"
     });
-    setIsEditing(false);
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateEmployee = async () => {
+    try {
+      const payload = {
+        ...editFormData,
+        salary_per_event: editFormData.salary_per_event === "" ? 0 : Number(editFormData.salary_per_event)
+      };
+      const response = await employeeService.update(editingEmployee.employee_id, payload);
+      if (response.error) throw new Error(response.error);
+      setEditModalOpen(false);
+      setEditingEmployee(null);
+      loadData();
+    } catch (err) {
+      alert("Error al actualizar empleado: " + err.message);
+    }
+  };
+
+  const handleDeleteClick = (employeeId) => {
+    setDeleteTargetId(employeeId);
+    setConfirmDeleteOpen(true);
+  };
+
+  const executeDeleteEmployee = async () => {
+    try {
+      const response = await employeeService.delete(deleteTargetId);
+      if (response.error) throw new Error(response.error);
+      setConfirmDeleteOpen(false);
+      setDeleteTargetId(null);
+      loadData();
+    } catch (err) {
+      alert("Error al eliminar empleado: " + err.message);
+    }
   };
 
   const handleExportPDF = async () => {
@@ -222,223 +235,6 @@ export function HRView() {
       employeeId: employee.employee_id
     }))
   ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  // VISTA DE PERFIL (Cuando se selecciona un empleado)
-  if (selectedEmployee) {
-    return (
-      <>
-      <div className="space-y-8">
-        <Button
-          variant="outline"
-          onClick={() => setSelectedEmployee(null)}
-          className="rounded-xl border-border hover:bg-muted/50"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver al directorio
-        </Button>
-
-        <Card className="rounded-2xl border-none shadow-md">
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1d3557]">
-                  <span className="text-2xl font-semibold text-white">
-                    {selectedEmployee.first_name?.charAt(0)}{selectedEmployee.last_name?.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-foreground">
-                      {selectedEmployee.first_name} {selectedEmployee.last_name}
-                    </h1>
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[selectedEmployee.status] || "bg-gray-200"}`}>
-                      {statusLabels[selectedEmployee.status] || selectedEmployee.status}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Rol: {selectedEmployee.rol || "No definido"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleDeleteEmployee}
-                  className="rounded-xl border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar
-                </Button>
-                <Button
-                  variant={isEditing ? "default" : "outline"}
-                  onClick={() => {
-                    if (isEditing) {
-                      handleUpdateEmployee();
-                    } else {
-                      setIsEditing(true);
-                    }
-                  }}
-                  className={isEditing ? "rounded-xl bg-[#c05c3c] text-white hover:bg-[#a84d32]" : "rounded-xl border-border hover:bg-muted/50"}
-                >
-                  {isEditing ? <><Save className="mr-2 h-4 w-4" /> Guardar Cambios</> : <><Edit className="mr-2 h-4 w-4" /> Editar Perfil</>}
-                </Button>
-                {isEditing && (
-                  <Button variant="outline" onClick={() => {
-                    setIsEditing(false);
-                    setEditFormData({
-                      first_name: selectedEmployee.first_name,
-                      last_name: selectedEmployee.last_name,
-                      email: selectedEmployee.email,
-                      phone: selectedEmployee.phone,
-                      rol: selectedEmployee.rol,
-                      salary_per_event: selectedEmployee.salary_per_event,
-                      status: selectedEmployee.status
-                    });
-                  }} className="rounded-xl border-border hover:bg-muted/50">
-                    Cancelar
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="rounded-2xl border-none shadow-md">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-foreground">Información Personal</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nombre</Label>
-                      <Input value={editFormData.first_name} onChange={(e) => setEditFormData({...editFormData, first_name: e.target.value})} className="rounded-xl focus:ring-[#c05c3c]"/>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Apellido</Label>
-                      <Input value={editFormData.last_name} onChange={(e) => setEditFormData({...editFormData, last_name: e.target.value})} className="rounded-xl focus:ring-[#c05c3c]"/>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Correo electrónico</Label>
-                      <Input type="email" value={editFormData.email} onChange={(e) => setEditFormData({...editFormData, email: e.target.value})} className="rounded-xl focus:ring-[#c05c3c]"/>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Teléfono</Label>
-                      <Input value={editFormData.phone} onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})} className="rounded-xl focus:ring-[#c05c3c]"/>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Rol</Label>
-                      <Input value={editFormData.rol} onChange={(e) => setEditFormData({...editFormData, rol: e.target.value})} className="rounded-xl focus:ring-[#c05c3c]"/>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Estado</Label>
-                      <select 
-                        value={editFormData.status} 
-                        onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
-                        className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
-                      >
-                        <option value="active">Activo</option>
-                        <option value="inactive">Inactivo</option>
-                        <option value="suspended">Suspendido</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Tarifa por Evento ($)</Label>
-                      <Input type="number" min="0" value={editFormData.salary_per_event} onChange={(e) => setEditFormData({...editFormData, salary_per_event: e.target.value === "" ? "" : Math.max(0, parseFloat(e.target.value) || 0)})} className="rounded-xl focus:ring-[#c05c3c]"/>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/80">
-                      <Mail className="h-5 w-5 text-[#6b705c]" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Correo electrónico</p>
-                      <p className="font-medium text-foreground">{selectedEmployee.email || "N/A"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/80">
-                      <Phone className="h-5 w-5 text-[#6b705c]" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Teléfono</p>
-                      <p className="font-medium text-foreground">{selectedEmployee.phone || "N/A"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/80">
-                      <Calendar className="h-5 w-5 text-[#6b705c]" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Fecha de registro</p>
-                      <p className="font-medium text-foreground">
-                        {new Date(selectedEmployee.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/80">
-                      <BadgeCheck className="h-5 w-5 text-[#6b705c]" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Tarifa por Evento</p>
-                      <p className="font-medium text-foreground">${selectedEmployee.salary_per_event || "0"}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Confirm Delete Modal */}
-      {confirmDeleteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
-          <Card className="w-full max-w-sm rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
-            <CardContent className="p-6 text-center space-y-4">
-              <div className="flex justify-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100">
-                  <AlertTriangle className="h-7 w-7 text-red-500" />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Eliminar empleado</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  ¿Estás seguro de que deseas eliminar este empleado? Esta acción no se puede deshacer.
-                </p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setConfirmDeleteOpen(false)}
-                  className="flex-1 rounded-xl border-border"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={executeDeleteEmployee}
-                  className="flex-1 rounded-xl bg-red-500 text-white hover:bg-red-600"
-                >
-                  Eliminar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-      </>
-    );
-  }
 
   // VISTA PRINCIPAL (Lista de Empleados)
   return (
@@ -599,7 +395,7 @@ export function HRView() {
                       onChange={(e) => setFilterDepartment(e.target.value)}
                       className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
                     >
-                      {departments.map((dept) => (
+                      {["Todos", ...rolesList].map((dept) => (
                         <option key={dept} value={dept}>
                           {dept}
                         </option>
@@ -701,8 +497,7 @@ export function HRView() {
                       {filteredEmployees.map((employee) => (
                         <tr
                           key={employee.employee_id}
-                          className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm cursor-pointer"
-                          onClick={() => openProfile(employee)}
+                          className="transition-all duration-300 hover:bg-muted/60 hover:shadow-sm"
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -749,17 +544,30 @@ export function HRView() {
                             <span className="font-semibold text-[#6b705c]">${employee.salary_per_event || 0}</span>
                           </td>
                           <td className="px-6 py-4">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openProfile(employee);
-                              }}
-                              className="rounded-lg border-border text-xs hover:bg-muted/50"
-                            >
-                              Ver perfil
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditClick(employee);
+                                }}
+                                className="rounded-lg border-border text-xs hover:bg-muted/50"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(employee.employee_id);
+                                }}
+                                className="rounded-lg border-red-200 text-red-600 hover:bg-red-50 text-xs"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -943,7 +751,7 @@ export function HRView() {
                       className="w-full appearance-none rounded-xl border border-input bg-background px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
                     >
                       <option value="">Seleccionar...</option>
-                      {departments.slice(1).map((dept) => (
+                      {rolesList.map((dept) => (
                         <option key={dept} value={dept}>
                           {dept}
                         </option>
@@ -991,6 +799,126 @@ export function HRView() {
                   className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
                 >
                   Crear Empleado
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Employee Modal */}
+      {editModalOpen && editingEmployee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in duration-300">
+          <Card className="w-full max-w-lg rounded-3xl border border-white/20 bg-card shadow-2xl shadow-black/20">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
+              <div>
+                <CardTitle className="text-xl font-semibold text-foreground">
+                  Editar empleado
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {editingEmployee.first_name} {editingEmployee.last_name}
+                </p>
+              </div>
+              <button
+                onClick={() => { setEditModalOpen(false); setEditingEmployee(null); }}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </CardHeader>
+            <CardContent className="space-y-5 p-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Nombre</Label>
+                  <Input
+                    value={editFormData.first_name}
+                    onChange={(e) => setEditFormData({...editFormData, first_name: e.target.value})}
+                    className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Apellido</Label>
+                  <Input
+                    value={editFormData.last_name}
+                    onChange={(e) => setEditFormData({...editFormData, last_name: e.target.value})}
+                    className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Correo electrónico</Label>
+                <Input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Teléfono</Label>
+                <Input
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
+                  className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Rol</Label>
+                  <div className="relative">
+                    <select
+                      value={editFormData.rol}
+                      onChange={(e) => setEditFormData({...editFormData, rol: e.target.value})}
+                      className="w-full appearance-none rounded-xl border border-input bg-background px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {rolesList.map((dept) => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Tarifa por Evento ($)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={editFormData.salary_per_event}
+                    onChange={(e) => setEditFormData({...editFormData, salary_per_event: e.target.value === "" ? "" : Math.max(0, parseFloat(e.target.value) || 0)})}
+                    className="rounded-xl border-input focus:ring-2 focus:ring-[#c05c3c]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Estado</Label>
+                  <div className="relative">
+                    <select
+                      value={editFormData.status}
+                      onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
+                      className="w-full appearance-none rounded-xl border border-input bg-background px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#c05c3c]"
+                    >
+                      <option value="active">Activo</option>
+                      <option value="inactive">Inactivo</option>
+                      <option value="suspended">Suspendido</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  onClick={() => { setEditModalOpen(false); setEditingEmployee(null); }}
+                  className="rounded-xl border-border"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleUpdateEmployee}
+                  className="rounded-xl bg-[#c05c3c] text-white shadow-lg shadow-[#c05c3c]/30 hover:bg-[#a84d32] transition-all duration-300 hover:-translate-y-1 hover:shadow-[#c05c3c]/50"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Guardar Cambios
                 </Button>
               </div>
             </CardContent>

@@ -77,7 +77,7 @@ export function SalesList() {
   }, []);
 
   const filteredSales = sales.filter((sale) => {
-    const eventName = sale.Event?.name?.toLowerCase() || `evento ${sale.event_id}`;
+    const eventName = (sale.Event?.title || `evento ${sale.event_id}`).toLowerCase();
     const transactionId = `#${String(sale.sale_id).padStart(5, '0')}`;
     const term = searchTerm.toLowerCase();
     
@@ -493,9 +493,17 @@ export function SalesList() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-semibold text-foreground bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
-                          {sale.Event?.name || `Evento #${sale.event_id}`}
-                        </span>
+                        <div>
+                          <span className="text-sm font-semibold text-foreground">
+                            {sale.Event?.title || `Evento #${sale.event_id}`}
+                          </span>
+                          {sale.Event?.start_date && (
+                            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(sale.Event.start_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <span className="font-bold text-lg text-foreground">

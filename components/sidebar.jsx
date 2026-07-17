@@ -16,22 +16,37 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-const navItems = [
-  { path: "/", label: "Panel", icon: <LayoutDashboard className="h-5 w-5" /> },
-  { path: "/sales", label: "Ventas", icon: <Receipt className="h-5 w-5" /> },
-  { path: "/payments", label: "Pagos", icon: <Wallet className="h-5 w-5" /> },
-  { path: "/events", label: "Eventos", icon: <Calendar className="h-5 w-5" /> },
-  { path: "/crm", label: "Clientes (CRM)", icon: <Users className="h-5 w-5" /> },
-  { path: "/inventory", label: "Inventario", icon: <Package className="h-5 w-5" /> },
-  { path: "/providers", label: "Proveedores", icon: <Truck className="h-5 w-5" /> },
-  { path: "/hr", label: "Recursos Humanos", icon: <UserCog className="h-5 w-5" /> },
-  { path: "/admin", label: "Administraci\xF3n", icon: <Settings className="h-5 w-5" /> }
+const allNavItems = [
+  { path: "/", label: "Panel", icon: <LayoutDashboard className="h-5 w-5" />, minAccess: 0 },
+  { path: "/sales", label: "Ventas", icon: <Receipt className="h-5 w-5" />, minAccess: 0 },
+  { path: "/payments", label: "Pagos", icon: <Wallet className="h-5 w-5" />, minAccess: 0 },
+  { path: "/events", label: "Eventos", icon: <Calendar className="h-5 w-5" />, minAccess: 0 },
+  { path: "/crm", label: "Clientes (CRM)", icon: <Users className="h-5 w-5" />, minAccess: 0 },
+  { path: "/inventory", label: "Inventario", icon: <Package className="h-5 w-5" />, minAccess: 0 },
+  { path: "/providers", label: "Proveedores", icon: <Truck className="h-5 w-5" />, minAccess: 0 },
+  { path: "/hr", label: "Recursos Humanos", icon: <UserCog className="h-5 w-5" />, minAccess: 0 },
+  { path: "/admin", label: "Administraci\xF3n", icon: <Settings className="h-5 w-5" />, minAccess: 0 }
 ];
 export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const roleName = user?.Role?.role_name;
+  const accessLevel = user?.Role?.access || 0;
+  const isGerente = roleName === "Gerente";
+  const isVentas = roleName === "Ventas" || roleName === "Bartender";
+
+  const navItems = allNavItems.filter((item) => {
+    if (isVentas) {
+      return item.path === "/" || item.path === "/sales";
+    }
+    if (isGerente) {
+      return item.path !== "/admin";
+    }
+    return true;
+  });
   return <>
       {
     /* 
